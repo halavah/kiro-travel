@@ -58,7 +58,7 @@ export function HotelDetail({ hotel, isLoggedIn }: HotelDetailProps) {
 
   const handleBookRoom = (room: HotelRoom) => {
     if (!isLoggedIn) {
-      router.push("/auth/login")
+      router.push("/login")
       return
     }
     setSelectedRoom(room)
@@ -71,7 +71,7 @@ export function HotelDetail({ hotel, isLoggedIn }: HotelDetailProps) {
     setIsBooking(true)
     const token = localStorage.getItem('token')
     if (!token) {
-      router.push("/auth/login")
+      router.push("/login")
       return
     }
 

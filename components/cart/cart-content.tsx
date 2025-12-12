@@ -37,6 +37,11 @@ export function CartContent() {
 
   const items: CartItem[] = data?.data || []
 
+  // #region agent log
+  // 记录组件接收到的购物车数据
+  fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cart-content.tsx:38',message:'组件接收到的购物车数据',data:{itemsCount: items.length, itemsSample: items.slice(0, 2).map(i => ({ id: i.id, hasTicket: !!i.ticket, ticketId: i.ticket?.id, hasSpot: !!i.ticket?.spot, spotId: i.ticket?.spot?.id }))},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B,C,D'})}).catch(()=>{});
+  // #endregion
+
   // 初始化全选状态
   useEffect(() => {
     if (items.length > 0 && selectedIds.length === 0) {

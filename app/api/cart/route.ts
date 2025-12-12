@@ -28,6 +28,9 @@ export async function GET(req: NextRequest) {
         t.description as ticket_description,
         t.price as ticket_price,
         t.stock as ticket_stock,
+        t.valid_from,
+        t.valid_to,
+        t.is_active,
         s.id as spot_id,
         s.name as spot_name,
         s.location as spot_location,
@@ -39,19 +42,55 @@ export async function GET(req: NextRequest) {
       ORDER BY ci.created_at DESC
     `, [decoded.userId])
 
-    // 解析 JSON 字段
-    const items = cartItems.map((item: any) => ({
-      ...item,
-      spot_images: item.spot_images ? JSON.parse(item.spot_images) : []
-    }))
+    // #region agent log
+    // 记录原始购物车数据结构
+    fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/cart/route.ts:50',message:'原始购物车数据结构',data:{cartItems: cartItems.slice(0, 2), count: cartItems.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+
+    // 转换数据结构以匹配组件期望
+    const items = cartItems.map((item: any) => {
+      // #region agent log
+      // 记录每个购物车项的转换过程
+      fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/cart/route.ts:58',message:'购物车项数据转换',data:{itemId: item.id, hasTicketId: !!item.ticket_id, hasSpotId: !!item.spot_id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B'})}).catch(()=>{});
+      // #endregion
+
+      return {
+        id: item.id,
+        user_id: decoded.userId,
+        ticket_id: item.ticket_id,
+        quantity: item.quantity,
+        created_at: item.created_at,
+        ticket: item.ticket_id ? {
+          id: item.ticket_id,
+          name: item.ticket_name,
+          description: item.ticket_description,
+          price: item.ticket_price,
+          stock: item.ticket_stock,
+          valid_from: item.valid_from,
+          valid_to: item.valid_to,
+          is_active: item.is_active,
+          spot: item.spot_id ? {
+            id: item.spot_id,
+            name: item.spot_name,
+            location: item.spot_location,
+            images: item.spot_images ? JSON.parse(item.spot_images) : []
+          } : undefined
+        } : undefined
+      }
+    })
+
+    // #region agent log
+    // 记录转换后的购物车数据结构
+    fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/cart/route.ts:82',message:'转换后的购物车数据结构',data:{items: items.slice(0, 2), count: items.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B'})}).catch(()=>{});
+    // #endregion
 
     // 计算总价
     const totalAmount = items.reduce((sum: number, item: any) => {
-      return sum + (item.ticket_price * item.quantity)
+      return sum + ((item.ticket?.price || 0) * item.quantity)
     }, 0)
 
     return NextResponse.json({
-      items,
+      data: items,
       totalAmount,
       count: items.length
     })
@@ -90,7 +129,7 @@ export async function POST(req: NextRequest) {
 
     // 检查门票是否存在且有库存
     const ticket = dbGet(`
-      SELECT id, name, price, stock, status
+      SELECT id, name, price, stock, is_active
       FROM tickets
       WHERE id = ?
     `, [ticket_id])
@@ -99,7 +138,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 })
     }
 
-    if (ticket.status !== 'active') {
+    if (!ticket.is_active) {
       return NextResponse.json({ error: 'Ticket is not available' }, { status: 400 })
     }
 

@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS spots (
   rating REAL DEFAULT 0,
   is_recommended INTEGER DEFAULT 0,  -- SQLite uses 0/1 for boolean
   view_count INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'draft')),
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now'))
 );
@@ -229,6 +230,7 @@ CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
 CREATE INDEX IF NOT EXISTS idx_spots_category ON spots(category_id);
 CREATE INDEX IF NOT EXISTS idx_spots_recommended ON spots(is_recommended);
 CREATE INDEX IF NOT EXISTS idx_spots_location ON spots(location);
+CREATE INDEX IF NOT EXISTS idx_spots_status ON spots(status);
 
 CREATE INDEX IF NOT EXISTS idx_spot_comments_spot ON spot_comments(spot_id);
 CREATE INDEX IF NOT EXISTS idx_spot_comments_user ON spot_comments(user_id);

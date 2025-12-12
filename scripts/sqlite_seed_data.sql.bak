@@ -7,23 +7,10 @@
 -- ═════════════════════════════════════════════════════════
 
 INSERT OR IGNORE INTO profiles (id, email, password_hash, username, full_name, role) VALUES
--- 管理员账号
 ('user_admin', 'admin@kiro.com', '$2a$10$rKJ5qIxH7jH0TKqPz9e4.OQxKxK8zPvGxJxQ5zKxQ5zKxQ5zKxQ5z', 'admin', '系统管理员', 'admin'),
-('user_admin2', 'manager@kiro.com', '$2a$10$rKJ5qIxH7jH0TKqPz9e4.OQxKxK8zPvGxJxQ5zKxQ5zKxQ5zKxQ5z', 'manager', '运营经理', 'admin'),
-
--- 导游账号
-('user_guide1', 'guide1@test.com', '$2a$10$rKJ5qIxH7jH0TKqPz9e4.OQxKxK8zPvGxJxQ5zKxQ5zKxQ5zKxQ5z', 'wangwu', '王五', 'guide'),
-('user_guide2', 'guide2@test.com', '$2a$10$rKJ5qIxH7jH0TKqPz9e4.OQxKxK8zPvGxJxQ5zKxQ5zKxQ5zKxQ5z', 'zhaoliu', '赵六', 'guide'),
-('user_guide3', 'guide3@test.com', '$2a$10$rKJ5qIxH7jH0TKqPz9e4.OQxKxK8zPvGxJxQ5zKxQ5zKxQ5zKxQ5z', 'sunqi', '孙七', 'guide'),
-
--- 普通用户账号
 ('user_001', 'zhang@test.com', '$2a$10$rKJ5qIxH7jH0TKqPz9e4.OQxKxK8zPvGxJxQ5zKxQ5zKxQ5zKxQ5z', 'zhangsan', '张三', 'user'),
 ('user_002', 'li@test.com', '$2a$10$rKJ5qIxH7jH0TKqPz9e4.OQxKxK8zPvGxJxQ5zKxQ5zKxQ5zKxQ5z', 'lisi', '李四', 'user'),
-('user_003', 'user1@test.com', '$2a$10$rKJ5qIxH7jH0TKqPz9e4.OQxKxK8zPvGxJxQ5zKxQ5zKxQ5zKxQ5z', 'user1', '测试用户1', 'user'),
-('user_004', 'user2@test.com', '$2a$10$rKJ5qIxH7jH0TKqPz9e4.OQxKxK8zPvGxJxQ5zKxQ5zKxQ5zKxQ5z', 'user2', '测试用户2', 'user'),
-('user_005', 'user3@test.com', '$2a$10$rKJ5qIxH7jH0TKqPz9e4.OQxKxK8zPvGxJxQ5zKxQ5zKxQ5zKxQ5z', 'user3', '测试用户3', 'user'),
-('user_006', 'demo@test.com', '$2a$10$rKJ5qIxH7jH0TKqPz9e4.OQxKxK8zPvGxJxQ5zKxQ5zKxQ5zKxQ5z', 'demo', '演示账号', 'user'),
-('user_007', 'test@test.com', '$2a$10$rKJ5qIxH7jH0TKqPz9e4.OQxKxK8zPvGxJxQ5zKxQ5zKxQ5zKxQ5z', 'tester', '测试账号', 'user');
+('user_003', 'wang@test.com', '$2a$10$rKJ5qIxH7jH0TKqPz9e4.OQxKxK8zPvGxJxQ5zKxQ5zKxQ5zKxQ5z', 'wangwu', '王五', 'guide');
 
 -- ═════════════════════════════════════════════════════════
 -- 2. 景点分类
@@ -50,7 +37,7 @@ INSERT OR IGNORE INTO spots (id, name, description, location, address, category_
 ('spot_007', '长城', '不到长城非好汉。万里长城是中国古代军事防御工程的重要组成部分。', '北京', '北京市延庆区八达岭镇', 'cat_002', '["https://images.unsplash.com/photo-1508804052814-cd3ba865a116"]', 40.00, 4.7, 0, 2987, 'active'),
 ('spot_008', '丽江古城', '世界文化遗产，拥有800多年历史的古镇，是纳西族文��的重要载体。', '云南丽江', '云南省丽江市古城区', 'cat_002', '["https://images.unsplash.com/photo-1534274325155-c5a5e4d19d37"]', 50.00, 4.6, 0, 1432, 'active'),
 ('spot_009', '张家界国家森林公园', '中国第一个国家森林公园，以奇特的石英砂岩峰林地貌著称。', '湖南张家界', '湖南省张家界市武陵源区', 'cat_001', '["https://images.unsplash.com/photo-1528127269322-539801943592"]', 225.00, 4.8, 1, 1765, 'active'),
-('spot_010', '广州塔', '广州新地标，世界第二高电视塔，有"小蛮腰"之称。', '广东广州', '广东省广州市海珠区阅江西路222号', 'cat_004', '["https://images.unsplash.com/photo-1559827260-dc66d52bef19"]', 150.00, 4.5, 0, 987, 'active');
+('spot_010', '广州塔', '广州新地标，世界第二高电视塔，有"小蛮腰"之称。', '广东广州', '广东省广州市海珠区阅江西路222号', 'cat_004', '["https://images.unsplash.com/photo-1559827260-dc66d52bef19"]', 150.00, 4.5, 0, 987);
 
 -- ═════════════════════════════════════════════════════════
 -- 4. 门票数据

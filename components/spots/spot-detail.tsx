@@ -41,14 +41,14 @@ export function SpotDetail({ spot, tickets, isLoggedIn }: SpotDetailProps) {
 
   const handleLike = async () => {
     if (!isLoggedIn) {
-      router.push("/auth/login")
+      router.push("/login")
       return
     }
 
     setIsLoading("like")
     const token = localStorage.getItem('token')
     if (!token) {
-      router.push("/auth/login")
+      router.push("/login")
       return
     }
 
@@ -77,14 +77,14 @@ export function SpotDetail({ spot, tickets, isLoggedIn }: SpotDetailProps) {
 
   const handleFavorite = async () => {
     if (!isLoggedIn) {
-      router.push("/auth/login")
+      router.push("/login")
       return
     }
 
     setIsLoading("favorite")
     const token = localStorage.getItem('token')
     if (!token) {
-      router.push("/auth/login")
+      router.push("/login")
       return
     }
 
@@ -110,16 +110,16 @@ export function SpotDetail({ spot, tickets, isLoggedIn }: SpotDetailProps) {
     }
   }
 
-  const handleAddToCart = async (ticket: TicketType) => {
+  const handleAddToCart = async (ticketId: string) => {
     if (!isLoggedIn) {
-      router.push("/auth/login")
+      router.push("/login")
       return
     }
 
-    setIsLoading(ticket.id)
+    setIsLoading(ticketId)
     const token = localStorage.getItem('token')
     if (!token) {
-      router.push("/auth/login")
+      router.push("/login")
       return
     }
 
@@ -131,7 +131,7 @@ export function SpotDetail({ spot, tickets, isLoggedIn }: SpotDetailProps) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          ticket_id: ticket.id,
+          ticket_id: ticketId,
           quantity: 1
         })
       })
@@ -331,7 +331,7 @@ export function SpotDetail({ spot, tickets, isLoggedIn }: SpotDetailProps) {
                     <Button
                       className="w-full mt-3"
                       size="sm"
-                      onClick={() => handleAddToCart(ticket)}
+                      onClick={() => handleAddToCart(ticket.id)}
                       disabled={ticket.stock === 0 || isLoading === ticket.id}
                     >
                       {isLoading === ticket.id ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : "加入购物车"}

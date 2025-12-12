@@ -39,7 +39,7 @@ export function SpotComments({ spotId, isLoggedIn }: SpotCommentsProps) {
 
   const handleSubmit = async () => {
     if (!isLoggedIn) {
-      router.push("/auth/login")
+      router.push("/login")
       return
     }
 
@@ -51,7 +51,7 @@ export function SpotComments({ spotId, isLoggedIn }: SpotCommentsProps) {
     setIsSubmitting(true)
     const token = localStorage.getItem('token')
     if (!token) {
-      router.push("/auth/login")
+      router.push("/login")
       return
     }
 

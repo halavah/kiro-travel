@@ -230,12 +230,12 @@ export function Header() {
             </>
           ) : (
             <div className="flex items-center gap-2">
-              <Link href="/auth/login">
+              <Link href="/login">
                 <Button variant="ghost" size="sm">
                   登录
                 </Button>
               </Link>
-              <Link href="/auth/sign-up">
+              <Link href="/register">
                 <Button size="sm">注册</Button>
               </Link>
             </div>

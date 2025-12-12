@@ -147,9 +147,9 @@ export default function RegisterPage() {
             </Button>
           </form>
           <div className="mt-4 text-center text-sm">
-            已有账户？{' '}
-            <Link href="/auth/login" className="text-blue-600 hover:underline">
-              立即登录
+            还没有账户？{' '}
+            <Link href="/login" className="text-blue-600 hover:underline">
+              立即注册
             </Link>
           </div>
         </CardContent>

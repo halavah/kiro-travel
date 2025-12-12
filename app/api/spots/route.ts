@@ -15,14 +15,14 @@ export async function GET(request: NextRequest) {
 
     console.log('Query params:', { page, limit, search, category, isRecommended })
 
-    let whereClause = 'WHERE s.status = 1'
+    let whereClause = "WHERE s.status = 'active'"
     const params: any[] = []
 
     // Use FTS5 for full-text search when search query is provided
     if (search) {
       // Use FTS5 virtual table for much faster search
       const ftsQuery = search.split(' ').map(term => `"${term.trim()}"`).join(' OR ')
-      whereClause += ' AND s.id IN (SELECT rowid FROM spots_fts WHERE spots_fts MATCH ?)'
+      whereClause += ' AND s.id IN (SELECT id FROM spots_fts WHERE spots_fts MATCH ?)'
       params.push(ftsQuery)
     }
 

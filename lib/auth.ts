@@ -29,16 +29,32 @@ export async function comparePassword(password: string, hash: string): Promise<b
 
 // 用户认证
 export async function authenticateUser(email: string, password: string) {
+  // #region agent log
+  // 记录认证尝试
+  fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/auth.ts:32',message:'认证尝试',data:{email},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
+
   const user = dbGet(
-    `SELECT id, email, password_hash, full_name, role, avatar_url FROM users WHERE email = ?`,
+    `SELECT id, email, password_hash, full_name, role, avatar_url FROM profiles WHERE email = ?`,
     [email]
   )
+
+  // #region agent log
+  // 记录查询结果
+  fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/auth.ts:40',message:'用户查询结果',data:{hasUser: !!user, hasPasswordHash: !!(user && user.password_hash)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
 
   if (!user || !user.password_hash) {
     return null
   }
 
   const isValidPassword = await comparePassword(password, user.password_hash)
+
+  // #region agent log
+  // 记录密码验证结果
+  fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/auth.ts:46',message:'密码验证结果',data:{isValidPassword},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
+
   if (!isValidPassword) {
     return null
   }
@@ -64,7 +80,7 @@ export async function registerUser(userData: {
   role?: string
 }) {
   // 检查用户是否已存在
-  const existingUser = dbGet('SELECT id FROM users WHERE email = ?', [userData.email])
+  const existingUser = dbGet('SELECT id FROM profiles WHERE email = ?', [userData.email])
   if (existingUser) {
     throw new Error('用户已存在')
   }
@@ -74,13 +90,13 @@ export async function registerUser(userData: {
 
   // 创建用户
   const { lastInsertRowid } = dbRun(
-    `INSERT INTO users (email, password_hash, full_name, role) VALUES (?, ?, ?, ?)`,
+    `INSERT INTO profiles (email, password_hash, full_name, role) VALUES (?, ?, ?, ?)`,
     [userData.email, password_hash, userData.full_name, userData.role || 'user']
   )
 
   // 返回用户信息（不含密码）
   const user = dbGet(
-    `SELECT id, email, full_name, role, avatar_url FROM users WHERE id = ?`,
+    `SELECT id, email, full_name, role, avatar_url FROM profiles WHERE id = ?`,
     [lastInsertRowid]
   )
 
@@ -109,7 +125,7 @@ export function validateAuth(request: Request): { user: any; error?: string } {
 
   // 获取用户信息
   const user = dbGet(
-    `SELECT id, email, full_name, role, avatar_url FROM users WHERE id = ?`,
+    `SELECT id, email, full_name, role, avatar_url FROM profiles WHERE id = ?`,
     [decoded.userId]
   )
 
