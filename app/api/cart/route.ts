@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    const body = await req.json()
+    const body: await req.json()
     const { ticket_id, quantity = 1 } = body
 
     // #region agent log
