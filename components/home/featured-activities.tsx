@@ -15,14 +15,16 @@ export function FeaturedActivities() {
   useEffect(() => {
     async function fetchActivities() {
       try {
-        const { data } = await supabase
-          .from("activities")
-          .select("*")
-          .eq("is_active", true)
-          .order("created_at", { ascending: false })
-          .limit(4)
+        const res = await fetch('/api/activities?is_active=true&limit=4')
 
-        setActivities(data || [])
+        if (!res.ok) {
+          throw new Error('Failed to fetch activities')
+        }
+
+        const data = await res.json()
+        if (data.success && data.data) {
+          setActivities(data.data)
+        }
       } catch (error) {
         console.error("Error fetching activities:", error)
       } finally {

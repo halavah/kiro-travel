@@ -4,12 +4,16 @@ import { validateAuth, checkRole } from '@/lib/auth'
 
 // GET /api/spots - 获取景点列表
 export async function GET(request: NextRequest) {
+  console.log('✅ Spots API GET called!')
   try {
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
     const search = searchParams.get('search') || ''
     const category = searchParams.get('category') || ''
+    const isRecommended = searchParams.get('is_recommended') === 'true'
+
+    console.log('Query params:', { page, limit, search, category, isRecommended })
 
     let whereClause = 'WHERE s.status = 1'
     const params: any[] = []
@@ -22,6 +26,10 @@ export async function GET(request: NextRequest) {
     if (category) {
       whereClause += ' AND sc.name = ?'
       params.push(category)
+    }
+
+    if (isRecommended) {
+      whereClause += ' AND s.is_recommended = 1'
     }
 
     const sql = `

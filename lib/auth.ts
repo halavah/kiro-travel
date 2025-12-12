@@ -30,7 +30,7 @@ export async function comparePassword(password: string, hash: string): Promise<b
 // 用户认证
 export async function authenticateUser(email: string, password: string) {
   const user = dbGet(
-    `SELECT id, email, password_hash, full_name, role, avatar_url FROM profiles WHERE email = ?`,
+    `SELECT id, email, password_hash, full_name, role, avatar_url FROM users WHERE email = ?`,
     [email]
   )
 
@@ -64,7 +64,7 @@ export async function registerUser(userData: {
   role?: string
 }) {
   // 检查用户是否已存在
-  const existingUser = dbGet('SELECT id FROM profiles WHERE email = ?', [userData.email])
+  const existingUser = dbGet('SELECT id FROM users WHERE email = ?', [userData.email])
   if (existingUser) {
     throw new Error('用户已存在')
   }
@@ -74,13 +74,13 @@ export async function registerUser(userData: {
 
   // 创建用户
   const { lastInsertRowid } = dbRun(
-    `INSERT INTO profiles (email, password_hash, full_name, role) VALUES (?, ?, ?, ?)`,
+    `INSERT INTO users (email, password_hash, full_name, role) VALUES (?, ?, ?, ?)`,
     [userData.email, password_hash, userData.full_name, userData.role || 'user']
   )
 
   // 返回用户信息（不含密码）
   const user = dbGet(
-    `SELECT id, email, full_name, role, avatar_url FROM profiles WHERE id = ?`,
+    `SELECT id, email, full_name, role, avatar_url FROM users WHERE id = ?`,
     [lastInsertRowid]
   )
 
@@ -109,7 +109,7 @@ export function validateAuth(request: Request): { user: any; error?: string } {
 
   // 获取用户信息
   const user = dbGet(
-    `SELECT id, email, full_name, role, avatar_url FROM profiles WHERE id = ?`,
+    `SELECT id, email, full_name, role, avatar_url FROM users WHERE id = ?`,
     [decoded.userId]
   )
 

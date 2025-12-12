@@ -14,14 +14,16 @@ export function LatestNews() {
   useEffect(() => {
     async function fetchNews() {
       try {
-        const { data } = await supabase
-          .from("news")
-          .select("*")
-          .eq("is_published", true)
-          .order("published_at", { ascending: false })
-          .limit(3)
+        const res = await fetch('/api/news?is_published=true&limit=3')
 
-        setNews(data || [])
+        if (!res.ok) {
+          throw new Error('Failed to fetch news')
+        }
+
+        const data = await res.json()
+        if (data.success && data.data) {
+          setNews(data.data)
+        }
       } catch (error) {
         console.error("Error fetching news:", error)
       } finally {

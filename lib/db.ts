@@ -19,8 +19,8 @@ db.pragma('foreign_keys = ON')  // 启用外键约束
 // 数据库初始化函数
 export function initDatabase() {
   try {
-    // 读取 SQL 文件并执行
-    const schema = require('fs').readFileSync(join(process.cwd(), 'scripts', '001_create_tables.sql'), 'utf8')
+    // 读取 SQLite 版本的 SQL 文件并执行
+    const schema = require('fs').readFileSync(join(process.cwd(), 'scripts', '001_create_tables_sqlite.sql'), 'utf8')
     db.exec(schema)
     console.log('✅ 数据库初始化成功')
   } catch (error) {
