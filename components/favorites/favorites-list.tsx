@@ -2,9 +2,10 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import useSWR from "swr"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -13,41 +14,90 @@ import type { Spot } from "@/lib/types"
 import { toast } from "sonner"
 
 interface FavoriteItem {
-  id: string
-  spot_id: string
+  id: number
+  spot_id: number
   created_at: string
   spot: Spot
 }
 
-interface FavoritesListProps {
-  favorites: FavoriteItem[]
+const fetcher = (url: string) => {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    throw new Error('未登录')
+  }
+  return fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  }).then(r => {
+    if (!r.ok) throw new Error('获取收藏失败')
+    return r.json()
+  })
 }
 
-export function FavoritesList({ favorites: initialFavorites }: FavoritesListProps) {
+export function FavoritesList() {
   const router = useRouter()
-  const [favorites, setFavorites] = useState(initialFavorites)
-  const [removingId, setRemovingId] = useState<string | null>(null)
+  const { data, error, isLoading, mutate } = useSWR('/api/favorites', fetcher)
+  const [removingId, setRemovingId] = useState<number | null>(null)
 
-  const handleRemove = async (favoriteId: string, e: React.MouseEvent) => {
+  const favorites: FavoriteItem[] = data?.data || []
+
+  const handleRemove = async (favoriteId: number, e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
 
     setRemovingId(favoriteId)
 
     try {
-      const { error } = await supabase.from("spot_favorites").delete().eq("id", favoriteId)
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/favorites/${favoriteId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
 
-      if (error) throw error
+      if (!response.ok) throw new Error('删除失败')
 
-      setFavorites((prev) => prev.filter((f) => f.id !== favoriteId))
+      mutate()
       toast.success("已取消收藏")
     } catch (error) {
       toast.error("操作失败")
+      console.error(error)
     } finally {
       setRemovingId(null)
     }
   }
 
+  // 加载状态
+  if (isLoading) {
+    return (
+      <div className="text-center py-16">
+        <Loader2 className="h-16 w-16 mx-auto mb-4 animate-spin text-primary" />
+        <p className="text-lg text-muted-foreground">加载收藏中...</p>
+      </div>
+    )
+  }
+
+  // 错误状态
+  if (error) {
+    return (
+      <div className="text-center py-16">
+        <Card>
+          <CardContent className="p-8">
+            <Heart className="h-16 w-16 mx-auto mb-4 opacity-50 text-destructive" />
+            <p className="text-lg font-semibold mb-2">加载失败</p>
+            <p className="text-sm text-muted-foreground mb-4">{error.message || '无法获取收藏数据'}</p>
+            <Button onClick={() => mutate()} variant="outline">
+              重试
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // 空收藏状态
   if (favorites.length === 0) {
     return (
       <div className="text-center py-16">

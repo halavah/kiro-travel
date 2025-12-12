@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import useSWR from "swr"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,19 +10,29 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { User, Mail, Phone, Calendar, Shield, Ticket, Hotel, Heart, MessageSquare } from "lucide-react"
+import { User, Mail, Phone, Calendar, Shield, Ticket, Hotel, Heart, MessageSquare, Loader2 } from "lucide-react"
 import type { User as UserType } from "@/lib/types"
 
-export function ProfileContent() {
-  const [user, setUser] = useState<UserType | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [stats, setStats] = useState({
-    orders: 0,
-    bookings: 0,
-    favorites: 0,
-    comments: 0,
+const fetcher = (url: string) => {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    throw new Error('未登录')
+  }
+  return fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  }).then(r => {
+    if (!r.ok) throw new Error('获取数据失败')
+    return r.json()
   })
+}
+
+export function ProfileContent() {
+  const { data: profileData, error: profileError, isLoading: profileLoading, mutate: mutateProfile } = useSWR('/api/profile', fetcher)
+  const { data: statsData, error: statsError, isLoading: statsLoading } = useSWR('/api/profile/stats', fetcher)
+
+  const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState({
     nickname: "",
     phone: "",
@@ -33,79 +44,51 @@ export function ProfileContent() {
     confirmPassword: "",
   })
 
+  const user: UserType | null = profileData?.data || null
+  const stats = statsData?.data || {
+    orders: 0,
+    bookings: 0,
+    favorites: 0,
+    comments: 0,
+  }
+
+  // 当用户数据加载完成时，初始化表单
   useEffect(() => {
-    fetchUserProfile()
-    fetchUserStats()
-  }, [])
-
-  async function fetchUserProfile() {
-    try {
-      const {
-        data: { user: authUser },
-      } = await supabase.auth.getUser()
-      if (!authUser) return
-
-      const { data } = await supabase.from("users").select("*").eq("id", authUser.id).single()
-
-      if (data) {
-        setUser(data)
-        setFormData({
-          nickname: data.nickname || "",
-          phone: data.phone || "",
-          avatar: data.avatar || "",
-        })
-      }
-    } catch (error) {
-      console.error("Error fetching profile:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function fetchUserStats() {
-    try {
-      const {
-        data: { user: authUser },
-      } = await supabase.auth.getUser()
-      if (!authUser) return
-
-      const [ordersRes, bookingsRes, favoritesRes, commentsRes] = await Promise.all([
-        supabase.from("orders").select("id", { count: "exact" }).eq("user_id", authUser.id),
-        supabase.from("hotel_bookings").select("id", { count: "exact" }).eq("user_id", authUser.id),
-        supabase.from("favorites").select("id", { count: "exact" }).eq("user_id", authUser.id),
-        supabase.from("comments").select("id", { count: "exact" }).eq("user_id", authUser.id),
-      ])
-
-      setStats({
-        orders: ordersRes.count || 0,
-        bookings: bookingsRes.count || 0,
-        favorites: favoritesRes.count || 0,
-        comments: commentsRes.count || 0,
+    if (user) {
+      setFormData({
+        nickname: user.nickname || "",
+        phone: user.phone || "",
+        avatar: user.avatar || "",
       })
-    } catch (error) {
-      console.error("Error fetching stats:", error)
     }
-  }
+  }, [user])
 
   async function handleUpdateProfile() {
     if (!user) return
     setSaving(true)
 
     try {
-      const { error } = await supabase
-        .from("users")
-        .update({
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
           nickname: formData.nickname,
           phone: formData.phone,
           avatar: formData.avatar,
         })
-        .eq("id", user.id)
+      })
 
-      if (error) throw error
+      if (!response.ok) throw new Error('更新失败')
+
+      mutateProfile()
       toast.success("个人信息更新成功")
-      fetchUserProfile()
     } catch (error) {
       toast.error("更新失败，请重试")
+      console.error(error)
     } finally {
       setSaving(false)
     }
@@ -124,35 +107,50 @@ export function ProfileContent() {
 
     setSaving(true)
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: passwordData.newPassword,
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/profile/password', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          newPassword: passwordData.newPassword,
+        })
       })
 
-      if (error) throw error
+      if (!response.ok) throw new Error('密码修改失败')
+
       toast.success("密码修改成功")
       setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
     } catch (error) {
       toast.error("密码修改失败，请重试")
+      console.error(error)
     } finally {
       setSaving(false)
     }
   }
 
-  if (loading) {
+  // 加载状态
+  if (profileLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="h-16 w-16 mx-auto mb-4 animate-spin text-primary" />
+        <p className="text-lg text-muted-foreground ml-4">加载个人资料中...</p>
       </div>
     )
   }
 
-  if (!user) {
+  // 错误状态
+  if (profileError || !user) {
     return (
       <Card>
         <CardContent className="py-12 text-center">
-          <p className="text-muted-foreground">请先登录后查看个人中心</p>
-          <Button className="mt-4" asChild>
-            <a href="/auth/login">去登录</a>
+          <User className="h-16 w-16 mx-auto mb-4 opacity-50 text-destructive" />
+          <p className="text-lg font-semibold mb-2">加载失败</p>
+          <p className="text-muted-foreground mb-4">{profileError?.message || '请先登录后查看个人中心'}</p>
+          <Button asChild>
+            <a href="/login">去登录</a>
           </Button>
         </CardContent>
       </Card>

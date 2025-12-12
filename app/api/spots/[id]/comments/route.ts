@@ -26,10 +26,10 @@ export async function GET(
     const comments = dbQuery(`
       SELECT
         c.*,
-        p.full_name,
-        p.avatar_url
+        u.nickname,
+        u.avatar
       FROM spot_comments c
-      LEFT JOIN profiles p ON c.user_id = p.id
+      LEFT JOIN users u ON c.user_id = u.id
       WHERE c.spot_id = ?
       ORDER BY c.created_at DESC
       LIMIT ? OFFSET ?
@@ -124,10 +124,10 @@ export async function POST(
     const comment = dbGet(`
       SELECT
         c.*,
-        p.full_name,
-        p.avatar_url
+        u.nickname,
+        u.avatar
       FROM spot_comments c
-      LEFT JOIN profiles p ON c.user_id = p.id
+      LEFT JOIN users u ON c.user_id = u.id
       WHERE c.id = ?
     `, [lastInsertRowid])
 

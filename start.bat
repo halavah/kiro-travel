@@ -33,12 +33,14 @@ echo   8) 清理端口 3000 占用
 echo   9) 清理所有 Node 进程
 echo.
 echo 数据库:
-echo  10) 初始化数据库
+echo  10) 初始化数据库 (创建表+测试数据+FTS索引)
 echo  11) 重置数据库 (删除并重建)
+echo  12) 查看数据统计
+echo  13) 设置全文搜索索引 (FTS5)
 echo.
 echo 其他:
-echo  12) 代码检查 (lint)
-echo  13) 类型检查 (tsc)
+echo  14) 代码检查 (lint)
+echo  15) 类型检查 (tsc)
 echo   0) 退出
 echo.
 echo ========================================
@@ -63,6 +65,8 @@ if "%choice%"=="10" goto opt10
 if "%choice%"=="11" goto opt11
 if "%choice%"=="12" goto opt12
 if "%choice%"=="13" goto opt13
+if "%choice%"=="14" goto opt14
+if "%choice%"=="15" goto opt15
 if "%choice%"=="0"  goto opt0
 
 rem 如果输入无效则执行默认操作
@@ -168,35 +172,49 @@ pause
 goto :eof
 
 :opt10
-echo 初始化数据库...
-if not exist data mkdir data
-sqlite3 data\travel.db < scripts\001_create_tables_sqlite.sql
-echo [OK] 数据库初始化完成
+echo 初始化数据库 (包含 FTS5 索引)...
+npm run db:init
 pause
 goto :eof
 
 :opt11
-echo 重置数据库 (删除并重建)...
-if exist data\travel.db del /f /q data\travel.db
-if exist data\travel.db-shm del /f /q data\travel.db-shm
-if exist data\travel.db-wal del /f /q data\travel.db-wal
-if not exist data mkdir data
-sqlite3 data\travel.db < scripts\001_create_tables_sqlite.sql
-if exist scripts\002_insert_test_data.sql (
-    sqlite3 data\travel.db < scripts\002_insert_test_data.sql
-    echo [OK] 测试数据已插入
+echo [警告] 这将删除所有数据！
+set /p confirm=确认重置数据库? (y/N):
+if /i "%confirm%"=="y" (
+    echo 重置数据库...
+    npm run db:reset
+) else (
+    echo 操作已取消
 )
-echo [OK] 数据库重置完成
 pause
 goto :eof
 
 :opt12
+echo 查看数据统计...
+if exist data\travel.db (
+    echo.
+    sqlite3 data\travel.db ".headers on" ".mode column" ".width 20 10" "SELECT '用户数' as 统计项, COUNT(*) as 数量 FROM users UNION ALL SELECT '景点分类数', COUNT(*) FROM spot_categories UNION ALL SELECT '景点数', COUNT(*) FROM spots UNION ALL SELECT '门票数', COUNT(*) FROM tickets UNION ALL SELECT '酒店数', COUNT(*) FROM hotels UNION ALL SELECT '酒店房间数', COUNT(*) FROM hotel_rooms UNION ALL SELECT '订单数', COUNT(*) FROM orders UNION ALL SELECT '评论数', COUNT(*) FROM spot_comments UNION ALL SELECT '活动数', COUNT(*) FROM activities UNION ALL SELECT '新闻数', COUNT(*) FROM news;"
+    echo.
+    echo [OK] 数据统计完成
+) else (
+    echo [错误] 数据库文件不存在，请先运行 '初始化数据库'
+)
+pause
+goto :eof
+
+:opt13
+echo 设置全文搜索索引 (FTS5)...
+npm run db:fts
+pause
+goto :eof
+
+:opt14
 echo 执行代码检查...
 npm run lint
 pause
 goto :eof
 
-:opt13
+:opt15
 echo 执行类型检查...
 npx tsc --noEmit
 pause

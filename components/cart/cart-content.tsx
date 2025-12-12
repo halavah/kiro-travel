@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import useSWR from "swr"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -11,16 +12,37 @@ import { ShoppingCart, Trash2, Plus, Minus, Loader2, Ticket, MapPin } from "luci
 import type { CartItem } from "@/lib/types"
 import { toast } from "sonner"
 
-interface CartContentProps {
-  cartItems: CartItem[]
+// Fetcher 函数
+const fetcher = (url: string) => {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    throw new Error('未登录')
+  }
+  return fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  }).then(r => {
+    if (!r.ok) throw new Error('获取购物车失败')
+    return r.json()
+  })
 }
 
-export function CartContent({ cartItems: initialItems }: CartContentProps) {
+export function CartContent() {
   const router = useRouter()
-  const [items, setItems] = useState(initialItems)
-  const [selectedIds, setSelectedIds] = useState<string[]>(initialItems.map((item) => item.id))
-  const [loadingId, setLoadingId] = useState<string | null>(null)
+  const { data, error, isLoading, mutate } = useSWR('/api/cart', fetcher)
+  const [selectedIds, setSelectedIds] = useState<number[]>([])
+  const [loadingId, setLoadingId] = useState<number | null>(null)
   const [isCheckingOut, setIsCheckingOut] = useState(false)
+
+  const items: CartItem[] = data?.data || []
+
+  // 初始化全选状态
+  useEffect(() => {
+    if (items.length > 0 && selectedIds.length === 0) {
+      setSelectedIds(items.map((item) => item.id))
+    }
+  }, [items])
 
   const selectedItems = items.filter((item) => selectedIds.includes(item.id))
   const totalAmount = selectedItems.reduce((sum, item) => sum + (item.ticket?.price || 0) * item.quantity, 0)
@@ -29,11 +51,11 @@ export function CartContent({ cartItems: initialItems }: CartContentProps) {
     setSelectedIds(checked ? items.map((item) => item.id) : [])
   }
 
-  const handleSelectItem = (itemId: string, checked: boolean) => {
+  const handleSelectItem = (itemId: number, checked: boolean) => {
     setSelectedIds((prev) => (checked ? [...prev, itemId] : prev.filter((id) => id !== itemId)))
   }
 
-  const handleUpdateQuantity = async (itemId: string, delta: number) => {
+  const handleUpdateQuantity = async (itemId: number, delta: number) => {
     const item = items.find((i) => i.id === itemId)
     if (!item) return
 
@@ -47,28 +69,50 @@ export function CartContent({ cartItems: initialItems }: CartContentProps) {
     setLoadingId(itemId)
 
     try {
-      await supabase.from("cart_items").update({ quantity: newQuantity }).eq("id", itemId)
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/cart/${itemId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ quantity: newQuantity })
+      })
 
-      setItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, quantity: newQuantity } : i)))
+      if (!response.ok) throw new Error('更新失败')
+
+      // 乐观更新 UI
+      mutate()
+      toast.success("已更新数量")
     } catch (error) {
       toast.error("更新失败")
+      console.error(error)
     } finally {
       setLoadingId(null)
     }
   }
 
-  const handleRemove = async (itemId: string) => {
+  const handleRemove = async (itemId: number) => {
     setLoadingId(itemId)
 
     try {
-      await supabase.from("cart_items").delete().eq("id", itemId)
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/cart/${itemId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
 
-      setItems((prev) => prev.filter((i) => i.id !== itemId))
+      if (!response.ok) throw new Error('删除失败')
+
+      // 更新本地状态
       setSelectedIds((prev) => prev.filter((id) => id !== itemId))
+      mutate()
       toast.success("已移除")
-      router.refresh()
     } catch (error) {
       toast.error("删除失败")
+      console.error(error)
     } finally {
       setLoadingId(null)
     }
@@ -81,66 +125,75 @@ export function CartContent({ cartItems: initialItems }: CartContentProps) {
     }
 
     setIsCheckingOut(true)
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      router.push("/auth/login")
-      return
-    }
 
     try {
-      // 生成订单号
-      const orderNo = `ORD${Date.now()}${Math.random().toString(36).slice(2, 8).toUpperCase()}`
+      const token = localStorage.getItem('token')
+      if (!token) {
+        router.push("/login")
+        return
+      }
 
-      // 创建订单
-      const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .insert({
-          user_id: user.id,
-          order_no: orderNo,
-          total_amount: totalAmount,
-          status: "pending",
+      // 创建订单（API 会自动处理订单项和购物车清理）
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          cart_item_ids: selectedItems.map(item => item.id)
         })
-        .select()
-        .single()
+      })
 
-      if (orderError) throw orderError
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || '创建订单失败')
+      }
 
-      // 创建订单详情
-      const orderItems = selectedItems.map((item) => ({
-        order_id: order.id,
-        ticket_id: item.ticket_id,
-        ticket_name: item.ticket?.name || "",
-        spot_name: item.ticket?.spot?.name || "",
-        price: item.ticket?.price || 0,
-        quantity: item.quantity,
-      }))
+      const result = await response.json()
 
-      const { error: itemsError } = await supabase.from("order_items").insert(orderItems)
-
-      if (itemsError) throw itemsError
-
-      // 删除购物车中已购买的商品
-      await supabase
-        .from("cart_items")
-        .delete()
-        .in(
-          "id",
-          selectedItems.map((i) => i.id),
-        )
+      // 刷新购物车数据
+      mutate()
 
       toast.success("订单创建成功")
-      router.push(`/orders/${order.id}`)
+      router.push(`/orders/${result.data.order.id}`)
     } catch (error) {
       console.error(error)
-      toast.error("创建订单失败")
+      toast.error(error instanceof Error ? error.message : "创建订单失败")
     } finally {
       setIsCheckingOut(false)
     }
   }
 
+  // 加载状态
+  if (isLoading) {
+    return (
+      <div className="text-center py-16">
+        <Loader2 className="h-16 w-16 mx-auto mb-4 animate-spin text-primary" />
+        <p className="text-lg text-muted-foreground">加载购物车中...</p>
+      </div>
+    )
+  }
+
+  // 错误状态
+  if (error) {
+    return (
+      <div className="text-center py-16">
+        <Card>
+          <CardContent className="p-8">
+            <ShoppingCart className="h-16 w-16 mx-auto mb-4 opacity-50 text-destructive" />
+            <p className="text-lg font-semibold mb-2">加载失败</p>
+            <p className="text-sm text-muted-foreground mb-4">{error.message || '无法获取购物车数据'}</p>
+            <Button onClick={() => mutate()} variant="outline">
+              重试
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // 空购物车状态
   if (items.length === 0) {
     return (
       <div className="text-center py-16">

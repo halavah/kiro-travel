@@ -70,8 +70,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    // 获取购物车商品
-    const cartItems = dbQuery(`
+    // 获取请求体（可选的 cart_item_ids 数组）
+    const body = await req.json().catch(() => ({}))
+    const { cart_item_ids } = body
+
+    // 构建购物车查询条件
+    let cartQuery = `
       SELECT
         ci.id as cart_item_id,
         ci.quantity,
@@ -85,7 +89,18 @@ export async function POST(req: NextRequest) {
       LEFT JOIN tickets t ON ci.ticket_id = t.id
       LEFT JOIN spots s ON t.spot_id = s.id
       WHERE ci.user_id = ?
-    `, [decoded.userId])
+    `
+    const cartParams: any[] = [decoded.userId]
+
+    // 如果指定了特定的购物车商品ID，只获取这些商品
+    if (cart_item_ids && Array.isArray(cart_item_ids) && cart_item_ids.length > 0) {
+      const placeholders = cart_item_ids.map(() => '?').join(',')
+      cartQuery += ` AND ci.id IN (${placeholders})`
+      cartParams.push(...cart_item_ids)
+    }
+
+    // 获取购物车商品
+    const cartItems = dbQuery(cartQuery, cartParams)
 
     if (!cartItems || cartItems.length === 0) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 })
@@ -152,13 +167,27 @@ export async function POST(req: NextRequest) {
       `, [item.quantity, item.ticket_id])
     }
 
-    // 清空购物车
-    dbRun(`DELETE FROM cart_items WHERE user_id = ?`, [decoded.userId])
+    // 清空已结算的购物车商品
+    if (cart_item_ids && Array.isArray(cart_item_ids) && cart_item_ids.length > 0) {
+      const placeholders = cart_item_ids.map(() => '?').join(',')
+      dbRun(`DELETE FROM cart_items WHERE user_id = ? AND id IN (${placeholders})`, [decoded.userId, ...cart_item_ids])
+    } else {
+      // 如果没有指定商品ID，清空所有购物车商品
+      dbRun(`DELETE FROM cart_items WHERE user_id = ?`, [decoded.userId])
+    }
+
+    // 获取创建的订单详情
+    const order = dbGet(`
+      SELECT id, order_no, total_amount, status, created_at
+      FROM orders
+      WHERE id = ?
+    `, [orderId])
 
     return NextResponse.json({
       success: true,
-      order_id: orderId,
-      order_no: orderNo,
+      data: {
+        order
+      },
       message: 'Order created successfully'
     }, { status: 201 })
 

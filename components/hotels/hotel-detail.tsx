@@ -69,29 +69,32 @@ export function HotelDetail({ hotel, isLoggedIn }: HotelDetailProps) {
     if (!selectedRoom || !checkIn || !checkOut) return
 
     setIsBooking(true)
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
+    const token = localStorage.getItem('token')
+    if (!token) {
       router.push("/auth/login")
       return
     }
 
     try {
-      const { error } = await supabase.from("hotel_bookings").insert({
-        user_id: user.id,
-        room_id: selectedRoom.id,
-        hotel_name: hotel.name,
-        room_name: selectedRoom.name,
-        check_in: format(checkIn, "yyyy-MM-dd"),
-        check_out: format(checkOut, "yyyy-MM-dd"),
-        guests: Number.parseInt(guests),
-        total_price: totalPrice,
-        status: "pending",
+      const response = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          room_id: selectedRoom.id,
+          hotel_name: hotel.name,
+          room_name: selectedRoom.name,
+          check_in: format(checkIn, "yyyy-MM-dd"),
+          check_out: format(checkOut, "yyyy-MM-dd"),
+          guests: Number.parseInt(guests),
+          total_price: totalPrice,
+          status: "pending"
+        })
       })
 
-      if (error) throw error
+      if (!response.ok) throw new Error('预订失败')
 
       toast.success("预订成功！")
       setBookingDialogOpen(false)

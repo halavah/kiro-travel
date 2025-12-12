@@ -46,23 +46,27 @@ export function SpotDetail({ spot, tickets, isLoggedIn }: SpotDetailProps) {
     }
 
     setIsLoading("like")
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) return
+    const token = localStorage.getItem('token')
+    if (!token) {
+      router.push("/auth/login")
+      return
+    }
 
     try {
-      if (isLiked) {
-        await supabase.from("spot_likes").delete().eq("spot_id", spot.id).eq("user_id", user.id)
-        setIsLiked(false)
-        setLikesCount((prev) => prev - 1)
-        toast.success("已取消点赞")
-      } else {
-        await supabase.from("spot_likes").insert({ spot_id: spot.id, user_id: user.id })
-        setIsLiked(true)
-        setLikesCount((prev) => prev + 1)
-        toast.success("点赞成功")
+      const response = await fetch(`/api/spots/${spot.id}/like`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) throw new Error('操作失败')
+
+      const result = await response.json()
+      if (result.success) {
+        setIsLiked(result.data.liked)
+        setLikesCount(result.data.likeCount)
+        toast.success(result.message)
       }
     } catch (error) {
       toast.error("操作失败")
@@ -78,21 +82,26 @@ export function SpotDetail({ spot, tickets, isLoggedIn }: SpotDetailProps) {
     }
 
     setIsLoading("favorite")
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) return
+    const token = localStorage.getItem('token')
+    if (!token) {
+      router.push("/auth/login")
+      return
+    }
 
     try {
-      if (isFavorited) {
-        await supabase.from("spot_favorites").delete().eq("spot_id", spot.id).eq("user_id", user.id)
-        setIsFavorited(false)
-        toast.success("已取消收藏")
-      } else {
-        await supabase.from("spot_favorites").insert({ spot_id: spot.id, user_id: user.id })
-        setIsFavorited(true)
-        toast.success("收藏成功")
+      const response = await fetch(`/api/spots/${spot.id}/favorite`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) throw new Error('操作失败')
+
+      const result = await response.json()
+      if (result.success) {
+        setIsFavorited(result.data.favorited)
+        toast.success(result.message)
       }
     } catch (error) {
       toast.error("操作失败")
@@ -108,32 +117,26 @@ export function SpotDetail({ spot, tickets, isLoggedIn }: SpotDetailProps) {
     }
 
     setIsLoading(ticket.id)
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) return
+    const token = localStorage.getItem('token')
+    if (!token) {
+      router.push("/auth/login")
+      return
+    }
 
     try {
-      const { data: existingItem } = await supabase
-        .from("cart_items")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("ticket_id", ticket.id)
-        .single()
-
-      if (existingItem) {
-        await supabase
-          .from("cart_items")
-          .update({ quantity: existingItem.quantity + 1 })
-          .eq("id", existingItem.id)
-      } else {
-        await supabase.from("cart_items").insert({
-          user_id: user.id,
+      const response = await fetch('/api/cart', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
           ticket_id: ticket.id,
-          quantity: 1,
+          quantity: 1
         })
-      }
+      })
+
+      if (!response.ok) throw new Error('添加失败')
 
       toast.success("已添加到购物车")
       router.refresh()

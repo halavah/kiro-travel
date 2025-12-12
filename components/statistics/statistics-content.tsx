@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import useSWR from "swr"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button"
 import {
   LineChart,
   Line,
@@ -18,7 +19,9 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts"
-import { MapPin, TrendingUp, Eye, Star } from "lucide-react"
+import { MapPin, TrendingUp, Eye, Star, Loader2, Download } from "lucide-react"
+import * as XLSX from 'xlsx'
+import { toast } from "sonner"
 
 interface CategoryStats {
   category: string
@@ -29,65 +32,83 @@ interface CategoryStats {
 
 const COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16"]
 
+const fetcher = (url: string) => {
+  return fetch(url).then(r => {
+    if (!r.ok) throw new Error('获取统计数据失败')
+    return r.json()
+  })
+}
+
 export function StatisticsContent() {
-  const [stats, setStats] = useState<CategoryStats[]>([])
-  const [loading, setLoading] = useState(true)
-  const [totalSpots, setTotalSpots] = useState(0)
-  const [totalViews, setTotalViews] = useState(0)
+  const { data, error, isLoading } = useSWR('/api/statistics', fetcher)
 
-  useEffect(() => {
-    fetchStatistics()
-  }, [])
+  const stats: CategoryStats[] = data?.data?.categoryStats || []
+  const totalSpots = data?.data?.totalSpots || 0
+  const totalViews = data?.data?.totalViews || 0
 
-  async function fetchStatistics() {
+  const handleExportToExcel = () => {
     try {
-      const { data: spots } = await supabase.from("spots").select("category, views, rating")
+      // Prepare data for Excel
+      const excelData = stats.map((stat, index) => ({
+        '分类名称': stat.category,
+        '景点数量': stat.count,
+        '总浏览量': stat.total_views,
+        '平均评分': stat.avg_rating,
+        '占比': totalSpots > 0 ? ((stat.count / totalSpots) * 100).toFixed(1) + '%' : '0%'
+      }))
 
-      if (spots) {
-        // 按类别分组统计
-        const categoryMap = new Map<string, { count: number; views: number; ratings: number[] }>()
+      // Add summary row
+      const avgRating = stats.length > 0 ? (stats.reduce((sum, s) => sum + s.avg_rating, 0) / stats.length).toFixed(1) : '0'
+      excelData.push({
+        '分类名称': '总计',
+        '景点数量': totalSpots,
+        '总浏览量': totalViews,
+        '平均评分': avgRating,
+        '占比': '100%'
+      })
 
-        spots.forEach((spot) => {
-          const cat = spot.category || "未分类"
-          if (!categoryMap.has(cat)) {
-            categoryMap.set(cat, { count: 0, views: 0, ratings: [] })
-          }
-          const data = categoryMap.get(cat)!
-          data.count++
-          data.views += spot.views || 0
-          if (spot.rating) data.ratings.push(spot.rating)
-        })
+      // Create workbook
+      const worksheet = XLSX.utils.json_to_sheet(excelData)
+      const workbook = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(workbook, worksheet, '景点统计')
 
-        const statsData: CategoryStats[] = []
-        categoryMap.forEach((value, key) => {
-          statsData.push({
-            category: key,
-            count: value.count,
-            total_views: value.views,
-            avg_rating:
-              value.ratings.length > 0
-                ? Number((value.ratings.reduce((a, b) => a + b, 0) / value.ratings.length).toFixed(1))
-                : 0,
-          })
-        })
+      // Set column widths
+      worksheet['!cols'] = [
+        { wch: 15 },  // 分类名称
+        { wch: 12 },  // 景点数量
+        { wch: 12 },  // 总浏览量
+        { wch: 12 },  // 平均评分
+        { wch: 10 }   // 占比
+      ]
 
-        // 按数量排序
-        statsData.sort((a, b) => b.count - a.count)
-        setStats(statsData)
-        setTotalSpots(spots.length)
-        setTotalViews(spots.reduce((sum, s) => sum + (s.views || 0), 0))
-      }
+      // Generate filename with current date
+      const date = new Date().toISOString().split('T')[0]
+      const filename = `景点统计数据_${date}.xlsx`
+
+      // Download file
+      XLSX.writeFile(workbook, filename)
+
+      toast.success('数据导出成功！')
     } catch (error) {
-      console.error("Error fetching statistics:", error)
-    } finally {
-      setLoading(false)
+      console.error('Export error:', error)
+      toast.error('导出失败，请重试')
     }
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center text-muted-foreground">
+          <p className="text-lg">加载统计数据失败</p>
+        </div>
       </div>
     )
   }
@@ -96,6 +117,14 @@ export function StatisticsContent() {
 
   return (
     <div className="space-y-6">
+      {/* Export Button */}
+      <div className="flex justify-end">
+        <Button onClick={handleExportToExcel} className="gap-2">
+          <Download className="h-4 w-4" />
+          导出 Excel
+        </Button>
+      </div>
+
       {/* 概览卡片 */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
@@ -276,7 +305,7 @@ export function StatisticsContent() {
                 <tr className="border-b">
                   <th className="text-left py-3 px-4 font-medium">分类名称</th>
                   <th className="text-center py-3 px-4 font-medium">景点数量</th>
-                  <th className="text-center py-3 px-4 font-medium">总浏览量</th>
+                  <th className="text-center py-3 px-4 font-medium">总���览量</th>
                   <th className="text-center py-3 px-4 font-medium">平均评分</th>
                   <th className="text-center py-3 px-4 font-medium">占比</th>
                 </tr>

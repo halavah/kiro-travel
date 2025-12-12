@@ -95,12 +95,14 @@ echo "  8) 清理端口 3000 占用"
 echo "  9) 清理所有 Next.js 进程"
 echo ""
 echo -e "${YELLOW}数据库:${NC}"
-echo " 10) 初始化数据库"
+echo " 10) 初始化数据库 (创建表+测试数据+FTS索引)"
 echo " 11) 重置数据库 (删除并重建)"
+echo " 12) 查看数据统计"
+echo " 13) 设置全文搜索索引 (FTS5)"
 echo ""
 echo -e "${YELLOW}其他:${NC}"
-echo " 12) 代码检查 (lint)"
-echo " 13) 类型检查 (tsc)"
+echo " 14) 代码检查 (lint)"
+echo " 15) 类型检查 (tsc)"
 echo "  0) 退出"
 echo ""
 echo -e "${BLUE}========================================${NC}"
@@ -143,25 +145,61 @@ case $choice in
         kill_next_processes
         ;;
     10)
-        echo -e "${GREEN}初始化数据库...${NC}"
-        sqlite3 data/travel.db < scripts/001_create_tables_sqlite.sql
-        echo -e "${GREEN}✓ 数据库初始化完成${NC}"
+        echo -e "${GREEN}初始化数据库 (包含 FTS5 索引)...${NC}"
+        npm run db:init
         ;;
     11)
-        echo -e "${YELLOW}重置数据库 (删除并重建)...${NC}"
-        rm -f data/travel.db data/travel.db-shm data/travel.db-wal
-        sqlite3 data/travel.db < scripts/001_create_tables_sqlite.sql
-        if [ -f "scripts/002_insert_test_data.sql" ]; then
-            sqlite3 data/travel.db < scripts/002_insert_test_data.sql
-            echo -e "${GREEN}✓ 测试数据已插入${NC}"
+        echo -e "${RED}警告: 这将删除所有数据！${NC}"
+        read -p "确认重置数据库? (y/N): " confirm
+        if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+            echo -e "${GREEN}重置数据库...${NC}"
+            npm run db:reset
+        else
+            echo -e "${YELLOW}操作已取消${NC}"
         fi
-        echo -e "${GREEN}✓ 数据库重置完成${NC}"
         ;;
     12)
+        echo -e "${GREEN}查看数据统计...${NC}"
+        if [ -f "data/travel.db" ]; then
+            sqlite3 data/travel.db << 'EOF'
+.headers on
+.mode column
+.width 20 10
+SELECT '用户数' as 统计项, COUNT(*) as 数量 FROM users
+UNION ALL
+SELECT '景点分类数', COUNT(*) FROM spot_categories
+UNION ALL
+SELECT '景点数', COUNT(*) FROM spots
+UNION ALL
+SELECT '门票数', COUNT(*) FROM tickets
+UNION ALL
+SELECT '酒店数', COUNT(*) FROM hotels
+UNION ALL
+SELECT '酒店房间数', COUNT(*) FROM hotel_rooms
+UNION ALL
+SELECT '订单数', COUNT(*) FROM orders
+UNION ALL
+SELECT '评论数', COUNT(*) FROM spot_comments
+UNION ALL
+SELECT '活动数', COUNT(*) FROM activities
+UNION ALL
+SELECT '新闻数', COUNT(*) FROM news;
+EOF
+            echo ""
+            echo -e "${GREEN}✓ 数据统计完成${NC}"
+        else
+            echo -e "${RED}数据库文件不存在，请先运行 '初始化数据库'${NC}"
+        fi
+        ;;
+    13)
+        echo -e "${GREEN}设置全文搜索索引 (FTS5)...${NC}"
+        npm run db:fts
+        ;;
+    14)
         echo -e "${GREEN}执行代码检查...${NC}"
         npm run lint
         ;;
-    13)
+    15)
         echo -e "${GREEN}执行类型检查...${NC}"
         npx tsc --noEmit
         ;;

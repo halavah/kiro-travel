@@ -27,8 +27,14 @@ import {
   BarChart3,
 } from "lucide-react"
 import { useEffect, useState } from "react"
-import type { User as SupabaseUser } from "@supabase/supabase-js"
-import type { Profile } from "@/lib/types"
+
+interface UserProfile {
+  id: number
+  email: string
+  full_name?: string
+  avatar_url?: string
+  role: string
+}
 
 const navItems = [
   { href: "/spots", label: "景点", icon: MapPin },
@@ -49,56 +55,79 @@ const guideNavItems = [
 export function Header() {
   const pathname = usePathname()
   const router = useRouter()
-  const [user, setUser] = useState<SupabaseUser | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
+  const [user, setUser] = useState<UserProfile | null>(null)
   const [cartCount, setCartCount] = useState(0)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
+    const fetchUserData = async () => {
+      const token = localStorage.getItem('token')
 
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      setUser(user)
+      if (!token) {
+        setUser(null)
+        setCartCount(0)
+        return
+      }
 
-      if (user) {
-        const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
-        setProfile(profile)
+      try {
+        // 获取用户信息
+        const userRes = await fetch('/api/auth/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
 
-        const { count } = await supabase
-          .from("cart_items")
-          .select("*", { count: "exact", head: true })
-          .eq("user_id", user.id)
-        setCartCount(count || 0)
+        if (userRes.ok) {
+          const userData = await userRes.json()
+          setUser(userData.data?.user || userData.user)
+
+          // 获取购物车数量（仅对非导游用户）
+          const userRole = userData.data?.user?.role || userData.user?.role
+          if (userRole !== 'guide') {
+            const cartRes = await fetch('/api/cart', {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            })
+
+            if (cartRes.ok) {
+              const cartData = await cartRes.json()
+              setCartCount(cartData.data?.length || 0)
+            }
+          }
+        } else {
+          // Token 无效，清除
+          localStorage.removeItem('token')
+          setUser(null)
+          setCartCount(0)
+        }
+      } catch (error) {
+        console.error('获取用户数据失败:', error)
       }
     }
 
-    getUser()
+    fetchUserData()
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        const { data: profile } = await supabase.from("profiles").select("*").eq("id", session.user.id).single()
-        setProfile(profile)
-      } else {
-        setProfile(null)
-        setCartCount(0)
+    // 监听存储变化（用于跨标签页同步）
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'token') {
+        fetchUserData()
       }
-    })
+    }
 
-    return () => subscription.unsubscribe()
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
   }, [])
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    setUser(null)
+    setCartCount(0)
     router.push("/")
     router.refresh()
   }
 
-  const currentNavItems = profile?.role === "guide" ? guideNavItems : navItems
+  const currentNavItems = user?.role === "guide" ? guideNavItems : navItems
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -136,7 +165,7 @@ export function Header() {
         <div className="flex items-center gap-3">
           {user ? (
             <>
-              {profile?.role !== "guide" && (
+              {user.role !== "guide" && (
                 <>
                   <Link href="/favorites">
                     <Button variant="ghost" size="icon" className="relative">
@@ -159,9 +188,9 @@ export function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                     <Avatar className="h-9 w-9">
-                      <AvatarImage src={profile?.avatar_url || undefined} />
+                      <AvatarImage src={user.avatar_url || undefined} />
                       <AvatarFallback className="bg-primary/10 text-primary">
-                        {profile?.full_name?.[0] || user.email?.[0]?.toUpperCase()}
+                        {user.full_name?.[0] || user.email?.[0]?.toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -169,10 +198,10 @@ export function Header() {
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="flex items-center justify-start gap-2 p-2">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium">{profile?.full_name || "用户"}</p>
+                      <p className="text-sm font-medium">{user.full_name || "用户"}</p>
                       <p className="text-xs text-muted-foreground">{user.email}</p>
                       <Badge variant="secondary" className="w-fit text-xs">
-                        {profile?.role === "guide" ? "导游" : profile?.role === "admin" ? "管理员" : "用户"}
+                        {user.role === "guide" ? "导游" : user.role === "admin" ? "管理员" : "用户"}
                       </Badge>
                     </div>
                   </div>
@@ -183,7 +212,7 @@ export function Header() {
                       个人中心
                     </Link>
                   </DropdownMenuItem>
-                  {profile?.role !== "guide" && (
+                  {user.role !== "guide" && (
                     <DropdownMenuItem asChild>
                       <Link href="/orders" className="cursor-pointer">
                         <Ticket className="mr-2 h-4 w-4" />

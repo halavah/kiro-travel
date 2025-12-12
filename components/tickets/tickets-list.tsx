@@ -30,36 +30,28 @@ export function TicketsList({ tickets, totalCount }: TicketsListProps) {
     e.stopPropagation()
 
     setLoadingId(ticket.id)
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const token = localStorage.getItem('token')
 
-    if (!user) {
+    if (!token) {
       router.push("/auth/login")
       setLoadingId(null)
       return
     }
 
     try {
-      const { data: existingItem } = await supabase
-        .from("cart_items")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("ticket_id", ticket.id)
-        .single()
-
-      if (existingItem) {
-        await supabase
-          .from("cart_items")
-          .update({ quantity: existingItem.quantity + 1 })
-          .eq("id", existingItem.id)
-      } else {
-        await supabase.from("cart_items").insert({
-          user_id: user.id,
+      const response = await fetch('/api/cart', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
           ticket_id: ticket.id,
-          quantity: 1,
+          quantity: 1
         })
-      }
+      })
+
+      if (!response.ok) throw new Error('添加失败')
 
       toast.success("已添加到购物车")
       router.refresh()

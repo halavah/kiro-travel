@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import useSWR from "swr"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -10,10 +11,6 @@ import { Hotel, Calendar, Users, Loader2, X } from "lucide-react"
 import type { HotelBooking } from "@/lib/types"
 import { toast } from "sonner"
 
-interface BookingsListProps {
-  bookings: HotelBooking[]
-}
-
 const statusMap = {
   pending: { label: "待确认", variant: "secondary" as const },
   confirmed: { label: "已确认", variant: "default" as const },
@@ -21,23 +18,68 @@ const statusMap = {
   completed: { label: "已完成", variant: "outline" as const },
 }
 
-export function BookingsList({ bookings: initialBookings }: BookingsListProps) {
-  const [bookings, setBookings] = useState(initialBookings)
-  const [loadingId, setLoadingId] = useState<string | null>(null)
+const fetcher = (url: string) => {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    throw new Error('未登录')
+  }
+  return fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  }).then(r => {
+    if (!r.ok) throw new Error('获取预订列表失败')
+    return r.json()
+  })
+}
 
-  const handleCancel = async (bookingId: string) => {
+export function BookingsList() {
+  const { data, error, isLoading, mutate } = useSWR('/api/bookings', fetcher)
+  const [loadingId, setLoadingId] = useState<number | null>(null)
+
+  const bookings: HotelBooking[] = data?.data || []
+
+  const handleCancel = async (bookingId: number) => {
     setLoadingId(bookingId)
+    const token = localStorage.getItem('token')
 
     try {
-      await supabase.from("hotel_bookings").update({ status: "cancelled" }).eq("id", bookingId)
+      const response = await fetch(`/api/bookings/${bookingId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
 
-      setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status: "cancelled" as const } : b)))
+      if (!response.ok) throw new Error('取消失败')
+
       toast.success("预订已取消")
+      mutate() // 刷新列表
     } catch (error) {
       toast.error("取消失败")
     } finally {
       setLoadingId(null)
     }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-16">
+        <Loader2 className="h-16 w-16 mx-auto mb-4 animate-spin text-muted-foreground" />
+        <p className="text-lg text-muted-foreground">加载中...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-16">
+        <div className="text-muted-foreground">
+          <Hotel className="h-16 w-16 mx-auto mb-4 opacity-50" />
+          <p className="text-lg">加载预订列表失败</p>
+        </div>
+      </div>
+    )
   }
 
   if (bookings.length === 0) {

@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import useSWR from "swr"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -11,10 +12,6 @@ import { FileText, Loader2, CreditCard, X } from "lucide-react"
 import type { Order } from "@/lib/types"
 import { toast } from "sonner"
 
-interface OrdersListProps {
-  orders: Order[]
-}
-
 const statusMap = {
   pending: { label: "待支付", variant: "secondary" as const },
   paid: { label: "已支付", variant: "default" as const },
@@ -22,23 +19,47 @@ const statusMap = {
   completed: { label: "已完成", variant: "outline" as const },
 }
 
-export function OrdersList({ orders: initialOrders }: OrdersListProps) {
+const fetcher = (url: string) => {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    throw new Error('未登录')
+  }
+  return fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  }).then(r => {
+    if (!r.ok) throw new Error('获取订单失败')
+    return r.json()
+  })
+}
+
+export function OrdersList() {
   const router = useRouter()
-  const [orders, setOrders] = useState(initialOrders)
+  const { data, error, isLoading, mutate } = useSWR('/api/orders', fetcher)
   const [loadingId, setLoadingId] = useState<string | null>(null)
+
+  const orders: Order[] = data?.orders || []
 
   const handlePay = async (orderId: string) => {
     setLoadingId(orderId)
 
     try {
-      await supabase.from("orders").update({ status: "paid", paid_at: new Date().toISOString() }).eq("id", orderId)
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/orders/${orderId}/pay`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
 
-      setOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? { ...o, status: "paid" as const, paid_at: new Date().toISOString() } : o)),
-      )
+      if (!response.ok) throw new Error('支付失败')
+
+      mutate()
       toast.success("支付成功")
     } catch (error) {
       toast.error("支付失败")
+      console.error(error)
     } finally {
       setLoadingId(null)
     }
@@ -48,17 +69,55 @@ export function OrdersList({ orders: initialOrders }: OrdersListProps) {
     setLoadingId(orderId)
 
     try {
-      await supabase.from("orders").update({ status: "cancelled" }).eq("id", orderId)
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/orders/${orderId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
 
-      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: "cancelled" as const } : o)))
+      if (!response.ok) throw new Error('取消失败')
+
+      mutate()
       toast.success("订单已取消")
     } catch (error) {
       toast.error("取消失败")
+      console.error(error)
     } finally {
       setLoadingId(null)
     }
   }
 
+  // 加载状态
+  if (isLoading) {
+    return (
+      <div className="text-center py-16">
+        <Loader2 className="h-16 w-16 mx-auto mb-4 animate-spin text-primary" />
+        <p className="text-lg text-muted-foreground">加载订单中...</p>
+      </div>
+    )
+  }
+
+  // 错误状态
+  if (error) {
+    return (
+      <div className="text-center py-16">
+        <Card>
+          <CardContent className="p-8">
+            <FileText className="h-16 w-16 mx-auto mb-4 opacity-50 text-destructive" />
+            <p className="text-lg font-semibold mb-2">加载失败</p>
+            <p className="text-sm text-muted-foreground mb-4">{error.message || '无法获取订单数据'}</p>
+            <Button onClick={() => mutate()} variant="outline">
+              重试
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // 空订单状态
   if (orders.length === 0) {
     return (
       <div className="text-center py-16">

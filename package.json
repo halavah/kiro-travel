@@ -10,7 +10,8 @@
     "setup": "node scripts/setup.mjs",
     "db:init": "node scripts/init-sqlite.mjs",
     "db:setup": "node scripts/init-sqlite.mjs",
-    "db:reset": "rm -f data/database.db && npm run db:init"
+    "db:reset": "rm -f data/database.db && npm run db:init",
+    "db:fts": "node scripts/setup-fts.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -41,6 +42,8 @@
     "@radix-ui/react-toggle": "1.1.1",
     "@radix-ui/react-toggle-group": "1.1.1",
     "@radix-ui/react-tooltip": "1.1.6",
+    "@types/bcryptjs": "^3.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
     "@vercel/analytics": "latest",
     "autoprefixer": "^10.4.20",
     "bcryptjs": "^3.0.3",
@@ -64,9 +67,11 @@
     "recharts": "latest",
     "sonner": "latest",
     "sqlite3": "^5.1.6",
+    "swr": "^2.3.7",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^1.1.2",
+    "xlsx": "^0.18.5",
     "zod": "3.25.76"
   },
   "devDependencies": {

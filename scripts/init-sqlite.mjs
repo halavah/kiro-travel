@@ -59,7 +59,10 @@ try {
   // 2. 插入测试数据
   executeSqlFile('sqlite_seed_data.sql', '插入测试数据')
 
-  // 3. 验证数据
+  // 3. 设置全文搜索 (FTS5)
+  executeSqlFile('003_add_fts_search.sql', '配置全文搜索索引')
+
+  // 4. 验证数据
   console.log('📊 验证数据插入情况:')
 
   const tables = [
