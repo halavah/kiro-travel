@@ -1,0 +1,51 @@
+import { createClient } from "@/lib/supabase/server"
+import { HotelsList } from "@/components/hotels/hotels-list"
+import { HotelsFilter } from "@/components/hotels/hotels-filter"
+
+export default async function HotelsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ search?: string; star?: string; sort?: string }>
+}) {
+  const params = await searchParams
+  const supabase = await createClient()
+
+  let query = supabase.from("hotels").select("*, rooms:hotel_rooms(*)", { count: "exact" }).eq("is_active", true)
+
+  if (params.search) {
+    query = query.or(`name.ilike.%${params.search}%,location.ilike.%${params.search}%`)
+  }
+
+  if (params.star) {
+    query = query.eq("star_rating", Number.parseInt(params.star))
+  }
+
+  switch (params.sort) {
+    case "price-asc":
+      query = query.order("price_min", { ascending: true })
+      break
+    case "price-desc":
+      query = query.order("price_min", { ascending: false })
+      break
+    case "star":
+      query = query.order("star_rating", { ascending: false })
+      break
+    default:
+      query = query.order("created_at", { ascending: false })
+  }
+
+  const { data: hotels, count } = await query
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground">酒店预订</h1>
+        <p className="text-muted-foreground mt-2">精选优质酒店，为您的旅途提供舒适住宿</p>
+      </div>
+
+      <HotelsFilter />
+
+      <HotelsList hotels={hotels || []} totalCount={count || 0} />
+    </div>
+  )
+}

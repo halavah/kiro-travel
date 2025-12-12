@@ -1,0 +1,32 @@
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
+import { BookingsList } from "@/components/bookings/bookings-list"
+
+export default async function BookingsPage() {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect("/auth/login")
+  }
+
+  const { data: bookings } = await supabase
+    .from("hotel_bookings")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground">我的酒店预订</h1>
+        <p className="text-muted-foreground mt-2">查看和管理您的酒店预订记录</p>
+      </div>
+
+      <BookingsList bookings={bookings || []} />
+    </div>
+  )
+}

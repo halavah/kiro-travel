@@ -1,0 +1,23 @@
+import { createClient } from "@/lib/supabase/server"
+import { NewsList } from "@/components/news/news-list"
+
+export default async function NewsPage() {
+  const supabase = await createClient()
+
+  const { data: news } = await supabase
+    .from("news")
+    .select("*")
+    .eq("is_published", true)
+    .order("published_at", { ascending: false })
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground">新闻中心</h1>
+        <p className="text-muted-foreground mt-2">最新旅游资讯，掌握行业动态</p>
+      </div>
+
+      <NewsList news={news || []} />
+    </div>
+  )
+}

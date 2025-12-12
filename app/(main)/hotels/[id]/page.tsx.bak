@@ -1,0 +1,33 @@
+import { createClient } from "@/lib/supabase/server"
+import { notFound } from "next/navigation"
+import { HotelDetail } from "@/components/hotels/hotel-detail"
+
+export default async function HotelDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+  const supabase = await createClient()
+
+  const { data: hotel, error } = await supabase
+    .from("hotels")
+    .select("*, rooms:hotel_rooms(*)")
+    .eq("id", id)
+    .eq("is_active", true)
+    .single()
+
+  if (error || !hotel) {
+    notFound()
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <HotelDetail hotel={hotel} isLoggedIn={!!user} />
+    </div>
+  )
+}

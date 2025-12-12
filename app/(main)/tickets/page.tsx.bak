@@ -1,0 +1,47 @@
+import { createClient } from "@/lib/supabase/server"
+import { TicketsList } from "@/components/tickets/tickets-list"
+import { TicketsFilter } from "@/components/tickets/tickets-filter"
+
+export default async function TicketsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ search?: string; sort?: string }>
+}) {
+  const params = await searchParams
+  const supabase = await createClient()
+
+  let query = supabase
+    .from("tickets")
+    .select("*, spot:spots(id, name, location, images, category:spot_categories(name))", { count: "exact" })
+    .eq("is_active", true)
+
+  if (params.search) {
+    query = query.or(`name.ilike.%${params.search}%,spot.name.ilike.%${params.search}%`)
+  }
+
+  switch (params.sort) {
+    case "price-asc":
+      query = query.order("price", { ascending: true })
+      break
+    case "price-desc":
+      query = query.order("price", { ascending: false })
+      break
+    default:
+      query = query.order("created_at", { ascending: false })
+  }
+
+  const { data: tickets, count } = await query
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground">门票预订</h1>
+        <p className="text-muted-foreground mt-2">快速预订各大景点门票，即买即用</p>
+      </div>
+
+      <TicketsFilter />
+
+      <TicketsList tickets={tickets || []} totalCount={count || 0} />
+    </div>
+  )
+}

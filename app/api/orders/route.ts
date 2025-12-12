@@ -1,0 +1,169 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { verifyToken } from '@/lib/auth'
+import { dbQuery, dbGet, dbRun } from '@/lib/db-utils'
+import { randomUUID } from 'crypto'
+
+// GET - 获取订单列表
+export async function GET(req: NextRequest) {
+  try {
+    const token = req.cookies.get('token')?.value
+
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const decoded = verifyToken(token)
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(req.url)
+    const status = searchParams.get('status')
+
+    // 构建查询条件
+    let whereClauses = ['o.user_id = ?']
+    let queryParams: any[] = [decoded.userId]
+
+    if (status && status !== 'all') {
+      whereClauses.push('o.status = ?')
+      queryParams.push(status)
+    }
+
+    const whereClause = whereClauses.join(' AND ')
+
+    // 查询订单列表
+    const orders = dbQuery(`
+      SELECT
+        o.id,
+        o.order_no,
+        o.total_amount,
+        o.status,
+        o.paid_at,
+        o.created_at,
+        COUNT(oi.id) as item_count
+      FROM orders o
+      LEFT JOIN order_items oi ON o.id = oi.order_id
+      WHERE ${whereClause}
+      GROUP BY o.id
+      ORDER BY o.created_at DESC
+    `, queryParams)
+
+    return NextResponse.json({ orders })
+
+  } catch (error) {
+    console.error('Error fetching orders:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+// POST - 创建订单（从购物车）
+export async function POST(req: NextRequest) {
+  try {
+    const token = req.cookies.get('token')?.value
+
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const decoded = verifyToken(token)
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+
+    // 获取购物车商品
+    const cartItems = dbQuery(`
+      SELECT
+        ci.id as cart_item_id,
+        ci.quantity,
+        t.id as ticket_id,
+        t.name as ticket_name,
+        t.price as ticket_price,
+        t.stock as ticket_stock,
+        t.status as ticket_status,
+        s.name as spot_name
+      FROM cart_items ci
+      LEFT JOIN tickets t ON ci.ticket_id = t.id
+      LEFT JOIN spots s ON t.spot_id = s.id
+      WHERE ci.user_id = ?
+    `, [decoded.userId])
+
+    if (!cartItems || cartItems.length === 0) {
+      return NextResponse.json({ error: 'Cart is empty' }, { status: 400 })
+    }
+
+    // 验证库存
+    for (const item of cartItems) {
+      if (item.ticket_status !== 'active') {
+        return NextResponse.json({
+          error: `Ticket "${item.ticket_name}" is not available`
+        }, { status: 400 })
+      }
+
+      if (item.ticket_stock < item.quantity) {
+        return NextResponse.json({
+          error: `Insufficient stock for "${item.ticket_name}"`,
+          available: item.ticket_stock
+        }, { status: 400 })
+      }
+    }
+
+    // 计算总金额
+    const totalAmount = cartItems.reduce((sum: number, item: any) => {
+      return sum + (item.ticket_price * item.quantity)
+    }, 0)
+
+    // 生成订单号（格式：年月日+时分秒+6位随机数）
+    const now = new Date()
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '')
+    const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, '')
+    const random = Math.floor(Math.random() * 1000000).toString().padStart(6, '0')
+    const orderNo = `ORD${dateStr}${timeStr}${random}`
+
+    // 创建订单
+    const orderId = randomUUID()
+
+    dbRun(`
+      INSERT INTO orders (id, user_id, order_no, total_amount, status, created_at)
+      VALUES (?, ?, ?, ?, 'pending', datetime('now'))
+    `, [orderId, decoded.userId, orderNo, totalAmount])
+
+    // 创建订单项
+    for (const item of cartItems) {
+      const orderItemId = randomUUID()
+
+      dbRun(`
+        INSERT INTO order_items (id, order_id, ticket_id, ticket_name, spot_name, price, quantity, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+      `, [
+        orderItemId,
+        orderId,
+        item.ticket_id,
+        item.ticket_name,
+        item.spot_name,
+        item.ticket_price,
+        item.quantity
+      ])
+
+      // 扣减库存
+      dbRun(`
+        UPDATE tickets
+        SET stock = stock - ?
+        WHERE id = ?
+      `, [item.quantity, item.ticket_id])
+    }
+
+    // 清空购物车
+    dbRun(`DELETE FROM cart_items WHERE user_id = ?`, [decoded.userId])
+
+    return NextResponse.json({
+      success: true,
+      order_id: orderId,
+      order_no: orderNo,
+      message: 'Order created successfully'
+    }, { status: 201 })
+
+  } catch (error) {
+    console.error('Error creating order:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

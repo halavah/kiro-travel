@@ -1,0 +1,59 @@
+import { createClient } from "@/lib/supabase/server"
+import { ActivitiesList } from "@/components/activities/activities-list"
+import { ActivitiesFilter } from "@/components/activities/activities-filter"
+
+export default async function ActivitiesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ search?: string; type?: string; sort?: string }>
+}) {
+  const params = await searchParams
+  const supabase = await createClient()
+
+  // 获取活动类型列表
+  const { data: activityTypes } = await supabase
+    .from("activities")
+    .select("activity_type")
+    .not("activity_type", "is", null)
+
+  const uniqueTypes = [...new Set(activityTypes?.map((a) => a.activity_type).filter(Boolean))]
+
+  let query = supabase.from("activities").select("*", { count: "exact" }).eq("is_active", true)
+
+  if (params.search) {
+    query = query.or(`name.ilike.%${params.search}%,location.ilike.%${params.search}%`)
+  }
+
+  if (params.type) {
+    query = query.eq("activity_type", params.type)
+  }
+
+  switch (params.sort) {
+    case "price-asc":
+      query = query.order("price", { ascending: true, nullsFirst: false })
+      break
+    case "price-desc":
+      query = query.order("price", { ascending: false })
+      break
+    case "date":
+      query = query.order("start_date", { ascending: true })
+      break
+    default:
+      query = query.order("created_at", { ascending: false })
+  }
+
+  const { data: activities, count } = await query
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground">旅游活动</h1>
+        <p className="text-muted-foreground mt-2">发现精彩旅游体验，开启难忘之旅</p>
+      </div>
+
+      <ActivitiesFilter activityTypes={uniqueTypes as string[]} />
+
+      <ActivitiesList activities={activities || []} totalCount={count || 0} />
+    </div>
+  )
+}

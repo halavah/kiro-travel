@@ -1,0 +1,315 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { toast } from "sonner"
+import { User, Mail, Phone, Calendar, Shield, Ticket, Hotel, Heart, MessageSquare } from "lucide-react"
+import type { User as UserType } from "@/lib/types"
+
+export function ProfileContent() {
+  const [user, setUser] = useState<UserType | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [stats, setStats] = useState({
+    orders: 0,
+    bookings: 0,
+    favorites: 0,
+    comments: 0,
+  })
+  const [formData, setFormData] = useState({
+    nickname: "",
+    phone: "",
+    avatar: "",
+  })
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  })
+
+  useEffect(() => {
+    fetchUserProfile()
+    fetchUserStats()
+  }, [])
+
+  async function fetchUserProfile() {
+    try {
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser()
+      if (!authUser) return
+
+      const { data } = await supabase.from("users").select("*").eq("id", authUser.id).single()
+
+      if (data) {
+        setUser(data)
+        setFormData({
+          nickname: data.nickname || "",
+          phone: data.phone || "",
+          avatar: data.avatar || "",
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function fetchUserStats() {
+    try {
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser()
+      if (!authUser) return
+
+      const [ordersRes, bookingsRes, favoritesRes, commentsRes] = await Promise.all([
+        supabase.from("orders").select("id", { count: "exact" }).eq("user_id", authUser.id),
+        supabase.from("hotel_bookings").select("id", { count: "exact" }).eq("user_id", authUser.id),
+        supabase.from("favorites").select("id", { count: "exact" }).eq("user_id", authUser.id),
+        supabase.from("comments").select("id", { count: "exact" }).eq("user_id", authUser.id),
+      ])
+
+      setStats({
+        orders: ordersRes.count || 0,
+        bookings: bookingsRes.count || 0,
+        favorites: favoritesRes.count || 0,
+        comments: commentsRes.count || 0,
+      })
+    } catch (error) {
+      console.error("Error fetching stats:", error)
+    }
+  }
+
+  async function handleUpdateProfile() {
+    if (!user) return
+    setSaving(true)
+
+    try {
+      const { error } = await supabase
+        .from("users")
+        .update({
+          nickname: formData.nickname,
+          phone: formData.phone,
+          avatar: formData.avatar,
+        })
+        .eq("id", user.id)
+
+      if (error) throw error
+      toast.success("个人信息更新成功")
+      fetchUserProfile()
+    } catch (error) {
+      toast.error("更新失败，请重试")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleChangePassword() {
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error("两次输入的密码不一致")
+      return
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      toast.error("密码长度至少为6位")
+      return
+    }
+
+    setSaving(true)
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: passwordData.newPassword,
+      })
+
+      if (error) throw error
+      toast.success("密码修改成功")
+      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
+    } catch (error) {
+      toast.error("密码修改失败，请重试")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center">
+          <p className="text-muted-foreground">请先登录后查看个人中心</p>
+          <Button className="mt-4" asChild>
+            <a href="/auth/login">去登录</a>
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* 用户概览卡片 */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row items-center gap-6">
+            <Avatar className="h-24 w-24">
+              <AvatarImage src={user.avatar || ""} alt={user.nickname || ""} />
+              <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+                {user.nickname?.[0] || user.email?.[0]?.toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 text-center md:text-left">
+              <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
+                <h2 className="text-2xl font-bold">{user.nickname || "未设置昵称"}</h2>
+                <Badge variant={user.role === "guide" ? "default" : "secondary"}>
+                  {user.role === "guide" ? "导游" : "用户"}
+                </Badge>
+              </div>
+              <p className="text-muted-foreground flex items-center justify-center md:justify-start gap-2">
+                <Mail className="h-4 w-4" />
+                {user.email}
+              </p>
+              {user.phone && (
+                <p className="text-muted-foreground flex items-center justify-center md:justify-start gap-2 mt-1">
+                  <Phone className="h-4 w-4" />
+                  {user.phone}
+                </p>
+              )}
+              <p className="text-sm text-muted-foreground mt-2 flex items-center justify-center md:justify-start gap-2">
+                <Calendar className="h-4 w-4" />
+                注册时间：{new Date(user.created_at).toLocaleDateString("zh-CN")}
+              </p>
+            </div>
+            {/* 统计数据 */}
+            <div className="grid grid-cols-4 gap-4 text-center">
+              <div className="p-4 rounded-lg bg-orange-50">
+                <Ticket className="h-5 w-5 mx-auto mb-1 text-orange-600" />
+                <p className="text-2xl font-bold text-orange-600">{stats.orders}</p>
+                <p className="text-xs text-muted-foreground">门票订单</p>
+              </div>
+              <div className="p-4 rounded-lg bg-blue-50">
+                <Hotel className="h-5 w-5 mx-auto mb-1 text-blue-600" />
+                <p className="text-2xl font-bold text-blue-600">{stats.bookings}</p>
+                <p className="text-xs text-muted-foreground">酒店预订</p>
+              </div>
+              <div className="p-4 rounded-lg bg-red-50">
+                <Heart className="h-5 w-5 mx-auto mb-1 text-red-600" />
+                <p className="text-2xl font-bold text-red-600">{stats.favorites}</p>
+                <p className="text-xs text-muted-foreground">收藏景点</p>
+              </div>
+              <div className="p-4 rounded-lg bg-green-50">
+                <MessageSquare className="h-5 w-5 mx-auto mb-1 text-green-600" />
+                <p className="text-2xl font-bold text-green-600">{stats.comments}</p>
+                <p className="text-xs text-muted-foreground">评论数</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 设置标签页 */}
+      <Tabs defaultValue="profile" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="profile">
+            <User className="h-4 w-4 mr-2" />
+            个人信息
+          </TabsTrigger>
+          <TabsTrigger value="security">
+            <Shield className="h-4 w-4 mr-2" />
+            安全设置
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="profile">
+          <Card>
+            <CardHeader>
+              <CardTitle>编辑个人信息</CardTitle>
+              <CardDescription>更新您的个人资料信息</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="nickname">昵称</Label>
+                  <Input
+                    id="nickname"
+                    value={formData.nickname}
+                    onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
+                    placeholder="请输入昵称"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">手机号码</Label>
+                  <Input
+                    id="phone"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="请输入手机号码"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="avatar">头像链接</Label>
+                <Input
+                  id="avatar"
+                  value={formData.avatar}
+                  onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
+                  placeholder="请输入头像图片URL"
+                />
+              </div>
+              <Button onClick={handleUpdateProfile} disabled={saving}>
+                {saving ? "保存中..." : "保存修改"}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="security">
+          <Card>
+            <CardHeader>
+              <CardTitle>修改密码</CardTitle>
+              <CardDescription>定期更换密码可以提高账户安全性</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">新密码</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  placeholder="请输入新密码（至少6位）"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">确认新密码</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  placeholder="请再次输入新密码"
+                />
+              </div>
+              <Button onClick={handleChangePassword} disabled={saving}>
+                {saving ? "修改中..." : "修改密码"}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}
