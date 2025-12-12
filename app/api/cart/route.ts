@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
         t.stock as ticket_stock,
         t.valid_from,
         t.valid_to,
-        t.is_active,
+        t.status,
         s.id as spot_id,
         s.name as spot_name,
         s.location as spot_location,
@@ -106,17 +106,33 @@ export async function POST(req: NextRequest) {
   try {
     const token = req.cookies.get('token')?.value
 
+    // #region agent log
+    // 记录添加到购物车尝试
+    fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/cart/route.ts:107',message:'添加到购物车尝试',data:{hasToken: !!token},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const decoded = verifyToken(token)
+
+    // #region agent log
+    // 记录token验证结果
+    fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/cart/route.ts:116',message:'token验证结果',data:{hasDecoded: !!decoded},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+
     if (!decoded) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
     const body = await req.json()
     const { ticket_id, quantity = 1 } = body
+
+    // #region agent log
+    // 记录请求体
+    fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/cart/route.ts:121',message:'请求体',data:{ticket_id, quantity},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
 
     // 验证输入
     if (!ticket_id) {
@@ -129,16 +145,21 @@ export async function POST(req: NextRequest) {
 
     // 检查门票是否存在且有库存
     const ticket = dbGet(`
-      SELECT id, name, price, stock, is_active
+      SELECT id, name, price, stock, status
       FROM tickets
       WHERE id = ?
     `, [ticket_id])
+
+    // #region agent log
+    // 记录门票查询结果
+    fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/cart/route.ts:133',message:'门票查询结果',data:{hasTicket: !!ticket, ticketStatus: ticket?.status},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
 
     if (!ticket) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 })
     }
 
-    if (!ticket.is_active) {
+    if (!ticket.status) {
       return NextResponse.json({ error: 'Ticket is not available' }, { status: 400 })
     }
 

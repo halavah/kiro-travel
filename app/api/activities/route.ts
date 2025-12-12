@@ -9,12 +9,15 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10')
     const isActive = searchParams.get('is_active') === 'true'
 
-    let whereClause = '1=1'
-    const params: any[] = []
+    let whereClauses: string[] = ['is_active = 1']
+    const queryParams: any[] = []
 
     if (isActive) {
-      whereClause += ' AND is_active = 1'
+      whereClauses.push('is_active = 1')
     }
+
+    const whereClause = whereClauses.join(' AND ')
+    const params = [...queryParams]
 
     // 查询总数
     const countStmt = db.prepare(`
@@ -42,7 +45,7 @@ export async function GET(request: NextRequest) {
         created_at,
         updated_at
       FROM activities
-      WHERE ${whereClause}
+      ${whereClause}
       ORDER BY created_at DESC
       LIMIT ? OFFSET ?
     `)

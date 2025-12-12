@@ -108,9 +108,8 @@ export function SpotComments({ spotId, isLoggedIn }: SpotCommentsProps) {
               {[1, 2, 3, 4, 5].map((star) => (
                 <button key={star} onClick={() => setRating(star)} className="focus:outline-none">
                   <Star
-                    className={`h-5 w-5 transition-colors ${
-                      star <= rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
-                    }`}
+                    className={`h-5 w-5 transition-colors ${star <= rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
+                      }`}
                   />
                 </button>
               ))}
@@ -160,9 +159,8 @@ export function SpotComments({ spotId, isLoggedIn }: SpotCommentsProps) {
                       {[1, 2, 3, 4, 5].map((star) => (
                         <Star
                           key={star}
-                          className={`h-3.5 w-3.5 ${
-                            star <= (comment.rating || 0) ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
-                          }`}
+                          className={`h-3.5 w-3.5 ${star <= (comment.rating || 0) ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
+                            }`}
                         />
                       ))}
                     </div>
