@@ -84,7 +84,7 @@ echo "  1) 开发服务器 (npm run dev)"
 echo "  2) 完整重启 (清理 + 重启) ⭐ 推荐"
 echo ""
 echo -e "${YELLOW}生产模式:${NC}"
-echo "  3) 构建项�� (npm run build)"
+echo "  3) 构建项目 (npm run build)"
 echo "  4) 启动生产服务器 (npm run start)"
 echo "  5) 构建并启动生产服务器"
 echo ""
@@ -119,7 +119,7 @@ case $choice in
         full_restart
         ;;
     3)
-        echo -e "${GREEN}���建生产版本...${NC}"
+        echo -e "${GREEN}构建生产版本...${NC}"
         npm run build
         ;;
     4)
