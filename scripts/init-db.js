@@ -24,6 +24,10 @@ const db = new Database(dbPath);
 
 console.log('开始初始化数据库...');
 
+// 将数据定义移到这里，以便后续函数可以访问
+let tickets = [];
+let spots = [];
+
 // 创建表
 const createTables = () => {
   // 用户表
@@ -224,7 +228,7 @@ const generateTestData = async () => {
   console.log('✓ 生成用户数据');
 
   // 2. 生成景点数据
-  const spots = [
+  spots = [
     {
       name: '故宫博物院',
       description: '中国明清两代的皇家宫殿，是世界上现存规模最大、保存最为完整的木质结构古建筑之一。',
@@ -287,20 +291,22 @@ const generateTestData = async () => {
     VALUES (?, ?, ?, ?, ?, ?)
   `);
 
-  for (const spot of spots) {
-    spotStmt.run(
-      spot.name,
-      spot.description,
-      spot.location,
-      spot.latitude,
-      spot.longitude,
-      JSON.stringify(spot.images)
+  for (let i = 0; i < spots.length; i++) {
+    const result = spotStmt.run(
+      spots[i].name,
+      spots[i].description,
+      spots[i].location,
+      spots[i].latitude,
+      spots[i].longitude,
+      JSON.stringify(spots[i].images)
     );
+    // 添加数据库生成的ID到spot对象
+    spots[i].id = result.lastInsertRowid;
   }
   console.log('✓ 生成景点数据');
 
   // 3. 生成门票数据
-  const tickets = [
+  tickets = [
     // 故宫门票
     { spot_id: 1, name: '成人票', description: '18周岁以上成年人', price: 60, stock: 1000 },
     { spot_id: 1, name: '学生票', description: '全日制大学本科及以下学历学生', price: 20, stock: 500 },
@@ -332,14 +338,16 @@ const generateTestData = async () => {
     VALUES (?, ?, ?, ?, ?, date('now'), date('now', '+1 year'))
   `);
 
-  for (const ticket of tickets) {
-    ticketStmt.run(
-      ticket.spot_id,
-      ticket.name,
-      ticket.description,
-      ticket.price,
-      ticket.stock
+  for (let i = 0; i < tickets.length; i++) {
+    const result = ticketStmt.run(
+      tickets[i].spot_id,
+      tickets[i].name,
+      tickets[i].description,
+      tickets[i].price,
+      tickets[i].stock
     );
+    // 添加数据库生成的ID到ticket对象
+    tickets[i].id = result.lastInsertRowid;
   }
   console.log('✓ 生成门票数据');
 
@@ -509,15 +517,259 @@ const generateTestData = async () => {
 
   // 7. 生成活动参与者数据 - 跳过，可以在应用运行时动态添加
   console.log('✓ 跳过生成活动参与者数据（可在运行时动态添加）');
+};
 
-  console.log('\n✅ 数据库初始化完成！');
-  console.log('\n测试账号信息：');
-  console.log('管理员账号：admin@example.com / admin123');
-  console.log('导游账号1：guide1@example.com / guide123');
-  console.log('导游账号2：guide2@example.com / guide123');
-  console.log('用户账号1：user1@example.com / user123');
-  console.log('用户账号2：user2@example.com / user123');
-  console.log('用户账号3：user3@example.com / user123');
+// 8. 生成测试订单数据
+const generateOrderData = () => {
+  const orderStmt = db.prepare(`
+    INSERT INTO orders (id, user_id, order_no, total_amount, status, note, paid_at, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const orderItemStmt = db.prepare(`
+    INSERT INTO order_items (id, order_id, ticket_id, ticket_name, spot_name, price, quantity)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  // 生成一些测试订单
+  const orders = [
+    {
+      user_id: 4, // 张三
+      items: [
+        { ticket_id: 1, quantity: 2 }, // 故宫成人票 x2
+        { ticket_id: 5, quantity: 1 }, // 长城成人票 x1
+      ],
+      status: 'paid',
+      note: '访问日期: 2025-01-15, 访问时间: 09:00, 联系人: 张三, 电话: 13800138001'
+    },
+    {
+      user_id: 5, // 李四
+      items: [
+        { ticket_id: 7, quantity: 1 }, // 黄山旺季门票 x1
+        { ticket_id: 9, quantity: 1 }, // 黄山索道票 x1
+      ],
+      status: 'pending'
+    },
+    {
+      user_id: 6, // 王五
+      items: [
+        { ticket_id: 10, quantity: 3 }, // 泰山旺季门票 x3
+      ],
+      status: 'completed',
+      paid_at: '2025-01-10 14:30:00'
+    },
+    {
+      user_id: 7, // 赵六
+      items: [
+        { ticket_id: 2, quantity: 1 }, // 故宫学生票 x1
+        { ticket_id: 6, quantity: 2 }, // 长城缆车往返票 x2
+      ],
+      status: 'cancelled'
+    },
+    {
+      user_id: 8, // 钱七
+      items: [
+        { ticket_id: 3, quantity: 1 }, // 故宫老人票 x1
+        { ticket_id: 4, quantity: 1 }, // 故宫儿童票 x1
+      ],
+      status: 'pending',
+      note: '访问日期: 2025-02-01, 访问时间: 10:00, 联系人: 钱七, 电话: 13800138007, 备注: 带老人和小孩'
+    }
+  ];
+
+  // 生成订单号函数
+  const generateOrderNo = () => {
+    const date = new Date();
+    const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
+    const timeStr = date.toTimeString().slice(0, 8).replace(/:/g, '');
+    const random = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+    return `ORD${dateStr}${timeStr}${random}`;
+  };
+
+  orders.forEach((order, index) => {
+    const orderId = `order_${index + 1}`;
+    const orderNo = generateOrderNo();
+
+    // 计算总金额
+    let totalAmount = 0;
+    order.items.forEach(item => {
+      const ticket = tickets.find(t => t.id === item.ticket_id);
+      if (ticket) {
+        totalAmount += ticket.price * item.quantity;
+      }
+    });
+
+    // 创建订单
+    orderStmt.run(
+      orderId,
+      order.user_id,
+      orderNo,
+      totalAmount,
+      order.status,
+      order.note || null,
+      order.paid_at || null,
+      new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString() // 随机过去30天内的时间
+    );
+
+    // 创建订单项
+    order.items.forEach((item, itemIndex) => {
+      const ticket = tickets.find(t => t.id === item.ticket_id);
+
+      if (!ticket) {
+        console.log(`Warning: Skip order item - ticket_id: ${item.ticket_id} not found`);
+        return;
+      }
+
+      const spot = spots.find(s => s.id === ticket.spot_id);
+      if (!spot) {
+        console.log(`Warning: Skip order item - spot_id: ${ticket.spot_id} not found`);
+        return;
+      }
+
+      orderItemStmt.run(
+        `order_item_${index + 1}_${itemIndex + 1}`,
+        orderId,
+        item.ticket_id,
+        ticket.name,
+        spot.name,
+        ticket.price,
+        item.quantity
+      );
+    });
+  });
+  console.log('✓ 生成测试订单数据');
+};
+
+// 9. 生成购物车数据
+const generateCartData = () => {
+  const cartStmt = db.prepare(`
+    INSERT INTO cart_items (id, user_id, ticket_id, quantity)
+    VALUES (?, ?, ?, ?)
+  `);
+
+  // 为一些用户添加购物车商品
+  const cartItems = [
+    { user_id: 4, ticket_id: 8, quantity: 1 }, // 张三 - 西湖游船票
+    { user_id: 5, ticket_id: 11, quantity: 2 }, // 李四 - 泰山淡季门票 x2
+    { user_id: 6, ticket_id: 13, quantity: 1 }, // 王五 - 泰山旅游专线车票
+    { user_id: 7, ticket_id: 3, quantity: 1 }, // 赵六 - 故宫老人票
+  ];
+
+  cartItems.forEach((item, index) => {
+    cartStmt.run(
+      `cart_item_${index + 1}`,
+      item.user_id,
+      item.ticket_id,
+      item.quantity
+    );
+  });
+  console.log('✓ 生成购物车数据');
+};
+
+// 10. 添加更多景点和酒店数据（供管理）
+const addMoreData = () => {
+  // 添加更多景点
+  const moreSpots = [
+    {
+      name: '张家界国家森林公园',
+      description: '中国第一个国家森林公园，以峰称奇、以谷显幽、以林见秀。',
+      location: '湖南省张家界市武陵源区',
+      latitude: 29.3170,
+      longitude: 110.4793,
+      images: [
+        'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800'
+      ]
+    },
+    {
+      name: '九寨沟',
+      description: '世界自然遗产、国家重点风景名胜区、国家AAAAA级旅游景区。',
+      location: '四川省阿坝藏族羌族自治州九寨沟县',
+      latitude: 33.2599,
+      longitude: 103.9240,
+      images: [
+        'https://images.unsplash.com/photo-1594989844338-e8a5446286f2?w=800'
+      ]
+    },
+    {
+      name: '桂林山水',
+      description: '桂林山水甲天下，典型的喀斯特地形造就了甲天下的桂林山水。',
+      location: '广西壮族自治区桂林市',
+      latitude: 25.2744,
+      longitude: 110.2992,
+      images: [
+        'https://images.unsplash.com/photo-1505219910884-28e2d00546b1?w=800'
+      ]
+    }
+  ];
+
+  const moreSpotStmt = db.prepare(`
+    INSERT INTO spots (name, description, location, latitude, longitude, images, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  moreSpots.forEach((spot, index) => {
+    moreSpotStmt.run(
+      spot.name,
+      spot.description,
+      spot.location,
+      spot.latitude,
+      spot.longitude,
+      JSON.stringify(spot.images),
+      Math.random() > 0.2 ? 'active' : 'inactive' // 随机设置状态
+    );
+  });
+
+  // 添加更多酒店
+  const moreHotels = [
+    {
+      name: '张家界武陵源宾馆',
+      description: '位于武陵源核心景区内，环境优美。',
+      location: '湖南省张家界市武陵源区',
+      address: '湖南省张家界市武陵源区军地路',
+      phone: '0744-5618888',
+      rating: 4.2,
+      status: 'active'
+    },
+    {
+      name: '九寨沟喜来登大酒店',
+      description: '国际五星级酒店，设施完善。',
+      location: '四川省阿坝州九寨沟县',
+      address: '四川省阿坝州九寨沟县漳扎镇',
+      phone: '0837-7739988',
+      rating: 4.6,
+      status: 'inactive' // 设置为非活跃，供管理测试
+    },
+    {
+      name: '桂林香格里拉大酒店',
+      description: '豪华五星级酒店，服务一流。',
+      location: '广西壮族自治区桂林市',
+      address: '广西壮族自治区桂林市环城南二路111号',
+      phone: '0773-2699999',
+      rating: 4.7,
+      status: 'active'
+    }
+  ];
+
+  const moreHotelStmt = db.prepare(`
+    INSERT INTO hotels (name, description, location, address, phone, rating, status, images, amenities)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  moreHotels.forEach(hotel => {
+    moreHotelStmt.run(
+      hotel.name,
+      hotel.description,
+      hotel.location,
+      hotel.address,
+      hotel.phone,
+      hotel.rating,
+      hotel.status,
+      JSON.stringify(['https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800']),
+      JSON.stringify(['免费WiFi', '空调', '电视', '热水'])
+    );
+  });
+
+  console.log('✓ 添加更多景点和酒店数据');
 };
 
 // 执行初始化
@@ -525,6 +777,28 @@ const init = async () => {
   try {
     createTables();
     await generateTestData();
+
+    // 在生成基础数据后，生成额外的测试数据
+    generateOrderData();
+    generateCartData();
+    addMoreData();
+
+    console.log('\n✅ 数据库初始化完成！');
+    console.log('\n测试账号信息：');
+    console.log('管理员账号：admin@example.com / admin123');
+    console.log('导游账号1：guide1@example.com / guide123');
+    console.log('导游账号2：guide2@example.com / guide123');
+    console.log('用户账号1：user1@example.com / user123');
+    console.log('用户账号2：user2@example.com / user123');
+    console.log('用户账号3：user3@example.com / user123');
+    console.log('\n生成的测试数据：');
+    console.log('- 景点：8个（包含不同状态的景点）');
+    console.log('- 门票：17种');
+    console.log('- 酒店：6家（包含活跃/非活跃状态）');
+    console.log('- 房间：9种');
+    console.log('- 订单：5个（包含不同状态）');
+    console.log('- 购物车：4个商品');
+    console.log('- 活动：4个');
   } catch (error) {
     console.error('初始化数据库失败：', error);
     process.exit(1);
