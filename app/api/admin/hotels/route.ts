@@ -43,12 +43,10 @@ export async function GET(req: NextRequest) {
         location,
         address,
         rating,
-        price_range,
-        facilities,
+        amenities,
         images,
-        contact_phone,
-        contact_email,
-        status,
+        phone,
+                status,
         created_at
       FROM hotels
       ${whereClause}
@@ -58,7 +56,7 @@ export async function GET(req: NextRequest) {
     // 解析 JSON 字段
     const hotelsWithParsedFields = hotels.map((hotel: any) => ({
       ...hotel,
-      facilities: hotel.facilities ? JSON.parse(hotel.facilities) : [],
+      amenities: hotel.amenities ? JSON.parse(hotel.amenities) : [],
       images: hotel.images ? JSON.parse(hotel.images) : []
     }))
 
@@ -101,11 +99,10 @@ export async function POST(req: NextRequest) {
       address,
       rating,
       price_range,
-      facilities,
+      amenities,
       images,
       contact_phone,
-      contact_email,
-      status
+            status
     } = body
 
     // 验证必填字段
@@ -120,8 +117,7 @@ export async function POST(req: NextRequest) {
     dbRun(`
       INSERT INTO hotels (
         id, name, description, location, address, rating,
-        price_range, facilities, images, contact_phone, contact_email,
-        status, created_by, created_at
+        price_range, amenities, images, contact_phone,         status, created_by, created_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
     `, [
       hotelId,
@@ -131,7 +127,7 @@ export async function POST(req: NextRequest) {
       address || null,
       parseFloat(rating),
       price_range || null,
-      JSON.stringify(facilities || []),
+      JSON.stringify(amenities || []),
       JSON.stringify(images || []),
       contact_phone || null,
       contact_email || null,
@@ -147,7 +143,7 @@ export async function POST(req: NextRequest) {
     // 解析 JSON 字段
     const hotelWithParsedFields = {
       ...hotel,
-      facilities: hotel?.facilities ? JSON.parse(hotel.facilities) : [],
+      amenities: hotel?.amenities ? JSON.parse(hotel.amenities) : [],
       images: hotel?.images ? JSON.parse(hotel.images) : []
     }
 

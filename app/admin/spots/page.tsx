@@ -58,7 +58,12 @@ export default function AdminSpotsPage() {
       if (categoryFilter !== 'all') params.append('category', categoryFilter)
       if (statusFilter !== 'all') params.append('status', statusFilter)
 
-      const res = await fetch(`/api/admin/spots?${params}`)
+      const token = localStorage.getItem('token')
+      const res = await fetch(`/api/admin/spots?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       if (!res.ok) throw new Error('Failed to fetch spots')
 
       const data = await res.json()
@@ -73,11 +78,11 @@ export default function AdminSpotsPage() {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch('/api/spot-categories')
+      const res = await fetch('/api/categories')
       if (!res.ok) throw new Error('Failed to fetch categories')
 
       const data = await res.json()
-      setCategories(data.categories || [])
+      setCategories(data.data || [])
     } catch (error) {
       console.error('Error fetching categories:', error)
     }

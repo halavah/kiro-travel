@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Search, Mail, Shield, Calendar, Eye } from "lucide-react"
 import Link from "next/link"
@@ -15,13 +15,10 @@ import Link from "next/link"
 interface User {
   id: string
   email: string
-  username: string | null
-  phone: string | null
+  full_name: string | null
   avatar_url: string | null
   role: 'user' | 'guide' | 'admin'
-  status: 'active' | 'inactive'
   created_at: string
-  last_login: string | null
   order_count: number
   total_spent: number
 }
@@ -31,7 +28,6 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
-  const [statusFilter, setStatusFilter] = useState('all')
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
 
@@ -39,9 +35,14 @@ export default function AdminUsersPage() {
     try {
       const params = new URLSearchParams()
       if (roleFilter !== 'all') params.append('role', roleFilter)
-      if (statusFilter !== 'all') params.append('status', statusFilter)
 
-      const res = await fetch(`/api/admin/users?${params}`)
+      const token = localStorage.getItem('token')
+
+      const res = await fetch(`/api/admin/users?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       if (!res.ok) throw new Error('Failed to fetch users')
 
       const data = await res.json()
@@ -55,7 +56,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     fetchUsers()
-  }, [roleFilter, statusFilter])
+  }, [roleFilter])
 
   const handleViewUser = (user: User) => {
     setSelectedUser(user)
@@ -84,37 +85,13 @@ export default function AdminUsersPage() {
     }
   }
 
-  const handleStatusToggle = async (userId: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'active' ? 'inactive' : 'active'
-
-    try {
-      const token = localStorage.getItem('token')
-      const res = await fetch(`/api/admin/users/${userId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ status: newStatus })
-      })
-
-      if (!res.ok) throw new Error('Failed to update status')
-
-      // 更新本地状态
-      setUsers(users.map(u => u.id === userId ? { ...u, status: newStatus as 'active' | 'inactive' } : u))
-    } catch (error) {
-      console.error('Error updating user status:', error)
-      alert('更新状态失败')
-    }
-  }
-
+  
   const filteredUsers = users.filter(user => {
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase()
       return (
         user.email.toLowerCase().includes(searchLower) ||
-        user.username?.toLowerCase().includes(searchLower) ||
-        user.phone?.includes(searchTerm)
+        user.full_name?.toLowerCase().includes(searchLower)
       )
     }
     return true
@@ -157,7 +134,7 @@ export default function AdminUsersPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder="搜索邮箱、用户名或手机号"
+                  placeholder="搜索邮箱或姓名"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -175,16 +152,6 @@ export default function AdminUsersPage() {
                 <SelectItem value="admin">管理员</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="状态筛选" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部状态</SelectItem>
-                <SelectItem value="active">活跃</SelectItem>
-                <SelectItem value="inactive">禁用</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </CardContent>
       </Card>
@@ -199,9 +166,7 @@ export default function AdminUsersPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>用户</TableHead>
-                <TableHead>联系方式</TableHead>
                 <TableHead>角色</TableHead>
-                <TableHead>状态</TableHead>
                 <TableHead>注册时间</TableHead>
                 <TableHead>订单统计</TableHead>
                 <TableHead>操作</TableHead>
@@ -215,19 +180,14 @@ export default function AdminUsersPage() {
                       <Avatar>
                         <AvatarImage src={user.avatar_url || ''} />
                         <AvatarFallback>
-                          {user.username?.[0] || user.email[0]?.toUpperCase()}
+                          {user.full_name?.[0] || user.email[0]?.toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium">{user.username || '未设置昵称'}</p>
+                        <p className="font-medium">{user.full_name || '未设置姓名'}</p>
                         <p className="text-sm text-muted-foreground">{user.email}</p>
                       </div>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    {user.phone && (
-                      <p className="text-sm">{user.phone}</p>
-                    )}
                   </TableCell>
                   <TableCell>
                     <Select
@@ -246,23 +206,7 @@ export default function AdminUsersPage() {
                     </Select>
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant={user.status === 'active' ? 'default' : 'secondary'}
-                      size="sm"
-                      onClick={() => handleStatusToggle(user.id, user.status)}
-                    >
-                      {user.status === 'active' ? '活跃' : '禁用'}
-                    </Button>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      <div>{formatDate(user.created_at)}</div>
-                      {user.last_login && (
-                        <div className="text-muted-foreground">
-                          最后登录: {formatDate(user.last_login)}
-                        </div>
-                      )}
-                    </div>
+                    {formatDate(user.created_at)}
                   </TableCell>
                   <TableCell>
                     <div className="text-sm">
@@ -320,12 +264,6 @@ export default function AdminUsersPage() {
                   <span className="text-muted-foreground">用户ID:</span>
                   <span className="font-mono text-sm">{selectedUser.id}</span>
                 </div>
-                {selectedUser.phone && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">手机号:</span>
-                    <span>{selectedUser.phone}</span>
-                  </div>
-                )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">角色:</span>
                   <Badge variant="outline">
@@ -334,21 +272,9 @@ export default function AdminUsersPage() {
                   </Badge>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">状态:</span>
-                  <Badge variant={selectedUser.status === 'active' ? 'default' : 'secondary'}>
-                    {selectedUser.status === 'active' ? '活跃' : '禁用'}
-                  </Badge>
-                </div>
-                <div className="flex justify-between">
                   <span className="text-muted-foreground">注册时间:</span>
                   <span className="text-sm">{formatDate(selectedUser.created_at)}</span>
                 </div>
-                {selectedUser.last_login && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">最后登录:</span>
-                    <span className="text-sm">{formatDate(selectedUser.last_login)}</span>
-                  </div>
-                )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">订单总数:</span>
                   <span>{selectedUser.order_count}</span>

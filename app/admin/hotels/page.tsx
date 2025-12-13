@@ -55,8 +55,13 @@ export default function AdminHotelsPage() {
     try {
       const params = new URLSearchParams()
       if (statusFilter !== 'all') params.append('status', statusFilter)
+      const token = localStorage.getItem('token')
 
-      const res = await fetch(`/api/admin/hotels?${params}`)
+      const res = await fetch(`/api/admin/hotels?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       if (!res.ok) throw new Error('Failed to fetch hotels')
 
       const data = await res.json()

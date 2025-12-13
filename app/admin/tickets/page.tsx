@@ -51,8 +51,13 @@ export default function AdminTicketsPage() {
     try {
       const params = new URLSearchParams()
       if (statusFilter !== 'all') params.append('status', statusFilter)
+      const token = localStorage.getItem('token')
 
-      const res = await fetch(`/api/admin/tickets?${params}`)
+      const res = await fetch(`/api/admin/tickets?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       if (!res.ok) throw new Error('Failed to fetch tickets')
 
       const data = await res.json()
@@ -67,7 +72,12 @@ export default function AdminTicketsPage() {
 
   const fetchSpots = async () => {
     try {
-      const res = await fetch('/api/admin/spots')
+      const token = localStorage.getItem('token')
+      const res = await fetch('/api/admin/spots', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       if (!res.ok) throw new Error('Failed to fetch spots')
 
       const data = await res.json()

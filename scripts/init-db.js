@@ -54,7 +54,27 @@ const createTables = () => {
       latitude REAL,
       longitude REAL,
       images TEXT, -- JSON array
+      category_id INTEGER,
+      price DECIMAL(10, 2) DEFAULT 0,
+      rating DECIMAL(2, 1) DEFAULT 5.0,
+      is_recommended BOOLEAN DEFAULT 0,
+      view_count INTEGER DEFAULT 0,
       status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (category_id) REFERENCES spot_categories(id)
+    )
+  `);
+
+  // 景点分类表
+  db.exec(`
+    CREATE TABLE spot_categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      description TEXT,
+      icon TEXT,
+      color TEXT DEFAULT '#3B82F6',
+      sort_order INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
@@ -227,7 +247,26 @@ const generateTestData = async () => {
   }
   console.log('✓ 生成用户数据');
 
-  // 2. 生成景点数据
+  // 2. 生成分类数据
+  const categories = [
+    { name: '历史文化', description: '历史古迹、文化景点', icon: '🏛️', color: '#DC2626', sort_order: 1 },
+    { name: '自然风光', description: '自然景观、风景名胜', icon: '🏔️', color: '#059669', sort_order: 2 },
+    { name: '主题公园', description: '游乐园、主题园区', icon: '🎢', color: '#7C3AED', sort_order: 3 },
+    { name: '现代建筑', description: '现代都市景观、建筑', icon: '🏙️', color: '#2563EB', sort_order: 4 },
+    { name: '休闲度假', description: '度假村、温泉、海滩', icon: '🏖️', color: '#EA580C', sort_order: 5 }
+  ];
+
+  const categoryStmt = db.prepare(`
+    INSERT INTO spot_categories (name, description, icon, color, sort_order)
+    VALUES (?, ?, ?, ?, ?)
+  `);
+
+  for (const category of categories) {
+    categoryStmt.run(category.name, category.description, category.icon, category.color, category.sort_order);
+  }
+  console.log('✓ 生成分类数据');
+
+  // 3. 生成景点数据
   spots = [
     {
       name: '故宫博物院',
@@ -287,8 +326,8 @@ const generateTestData = async () => {
   ];
 
   const spotStmt = db.prepare(`
-    INSERT INTO spots (name, description, location, latitude, longitude, images)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO spots (name, description, location, latitude, longitude, images, category_id, price, rating, is_recommended, view_count)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   for (let i = 0; i < spots.length; i++) {
@@ -298,7 +337,12 @@ const generateTestData = async () => {
       spots[i].location,
       spots[i].latitude,
       spots[i].longitude,
-      JSON.stringify(spots[i].images)
+      JSON.stringify(spots[i].images),
+      spots[i].category_id || (i % 5) + 1, // 循环分配分类
+      spots[i].price || Math.floor(Math.random() * 200) + 20, // 随机价格
+      spots[i].rating || (Math.random() * 1 + 4).toFixed(1), // 4.0-5.0的随机评分
+      spots[i].is_recommended || (Math.random() > 0.5 ? 1 : 0), // 随机推荐
+      spots[i].view_count || Math.floor(Math.random() * 100000) + 10000 // 随机浏览量
     );
     // 添加数据库生成的ID到spot对象
     spots[i].id = result.lastInsertRowid;

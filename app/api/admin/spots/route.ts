@@ -54,7 +54,6 @@ export async function GET(req: NextRequest) {
         s.name,
         s.description,
         s.location,
-        s.address,
         s.price,
         s.rating,
         s.is_recommended,

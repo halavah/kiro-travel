@@ -40,7 +40,12 @@ export default function AdminOrdersPage() {
       const params = new URLSearchParams()
       if (statusFilter !== 'all') params.append('status', statusFilter)
 
-      const res = await fetch(`/api/admin/orders?${params}`)
+      const token = localStorage.getItem('token')
+      const res = await fetch(`/api/admin/orders?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       if (!res.ok) throw new Error('Failed to fetch orders')
 
       const data = await res.json()
@@ -61,7 +66,7 @@ export default function AdminOrdersPage() {
       const searchLower = searchTerm.toLowerCase()
       return (
         order.order_no.toLowerCase().includes(searchLower) ||
-        order.username?.toLowerCase().includes(searchLower) ||
+        order.full_name?.toLowerCase().includes(searchLower) ||
         order.email?.toLowerCase().includes(searchLower)
       )
     }

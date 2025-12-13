@@ -28,7 +28,6 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url)
     const role = searchParams.get('role')
-    const status = searchParams.get('status')
 
     // 构建查询条件
     let whereClauses = ['1=1']
@@ -39,11 +38,6 @@ export async function GET(req: NextRequest) {
       queryParams.push(role)
     }
 
-    if (status && status !== 'all') {
-      whereClauses.push('p.status = ?')
-      queryParams.push(status)
-    }
-
     const whereClause = whereClauses.join(' AND ')
 
     // 查询用户列表
@@ -51,13 +45,10 @@ export async function GET(req: NextRequest) {
       SELECT
         p.id,
         p.email,
-        p.username,
-        p.phone,
+        p.full_name,
         p.avatar_url,
         p.role,
-        p.status,
         p.created_at,
-        p.last_login,
         COUNT(DISTINCT o.id) as order_count,
         COALESCE(SUM(o.total_amount), 0) as total_spent
       FROM profiles p

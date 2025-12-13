@@ -57,7 +57,12 @@ export default function AdminAnalyticsPage() {
 
   const fetchAnalytics = async () => {
     try {
-      const res = await fetch(`/api/admin/analytics?timeRange=${timeRange}`)
+      const token = localStorage.getItem('token')
+      const res = await fetch(`/api/admin/analytics?timeRange=${timeRange}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       if (!res.ok) throw new Error('Failed to fetch analytics')
 
       const analyticsData = await res.json()

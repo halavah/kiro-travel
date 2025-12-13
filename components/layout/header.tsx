@@ -25,6 +25,7 @@ import {
   Menu,
   X,
   BarChart3,
+  Settings,
 } from "lucide-react"
 import { useEffect, useState } from "react"
 
@@ -159,6 +160,69 @@ export function Header() {
                 </Link>
               )
             })}
+
+            {/* 后台管理下拉菜单 - 仅管理员可见 */}
+            {user?.role === "admin" && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted">
+                    <Settings className="h-4 w-4" />
+                    后台管理
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin" className="cursor-pointer">
+                      <Compass className="mr-2 h-4 w-4" />
+                      管理仪表板
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin/users" className="cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      用户管理
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin/orders" className="cursor-pointer">
+                      <ShoppingCart className="mr-2 h-4 w-4" />
+                      订单管理
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin/spots" className="cursor-pointer">
+                      <MapPin className="mr-2 h-4 w-4" />
+                      景点管理
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin/tickets" className="cursor-pointer">
+                      <Ticket className="mr-2 h-4 w-4" />
+                      门票管理
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin/hotels" className="cursor-pointer">
+                      <Hotel className="mr-2 h-4 w-4" />
+                      酒店管理
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin/analytics" className="cursor-pointer">
+                      <BarChart3 className="mr-2 h-4 w-4" />
+                      数据分析
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin/settings" className="cursor-pointer">
+                      <Settings className="mr-2 h-4 w-4" />
+                      系统设置
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </nav>
         </div>
 
@@ -269,6 +333,81 @@ export function Header() {
                 </Link>
               )
             })}
+
+            {/* 后台管理 - 仅管理员可见 */}
+            {user?.role === "admin" && (
+              <>
+                <div className="border-t pt-2 mt-2">
+                  <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    后台管理
+                  </p>
+                </div>
+                <Link
+                  href="/admin"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
+                >
+                  <Compass className="h-4 w-4" />
+                  管理仪表板
+                </Link>
+                <Link
+                  href="/admin/users"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
+                >
+                  <User className="h-4 w-4" />
+                  用户管理
+                </Link>
+                <Link
+                  href="/admin/orders"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  订单管理
+                </Link>
+                <Link
+                  href="/admin/spots"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
+                >
+                  <MapPin className="h-4 w-4" />
+                  景点管理
+                </Link>
+                <Link
+                  href="/admin/tickets"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
+                >
+                  <Ticket className="h-4 w-4" />
+                  门票管理
+                </Link>
+                <Link
+                  href="/admin/hotels"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
+                >
+                  <Hotel className="h-4 w-4" />
+                  酒店管理
+                </Link>
+                <Link
+                  href="/admin/analytics"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  数据分析
+                </Link>
+                <Link
+                  href="/admin/settings"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
+                >
+                  <Settings className="h-4 w-4" />
+                  系统设置
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       )}

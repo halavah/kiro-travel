@@ -9,7 +9,7 @@ if (!existsSync(dataDir)) {
 }
 
 // 创建数据库连接
-const dbPath = join(dataDir, 'travel.db')
+const dbPath = join(dataDir, 'database.sqlite')
 export const db = new Database(dbPath)
 
 // 配置数据库
