@@ -10,8 +10,8 @@ export async function GET(req: NextRequest) {
         COUNT(s.id) as count,
         COALESCE(SUM(s.view_count), 0) as total_views,
         COALESCE(AVG(s.rating), 0) as avg_rating
-      FROM categories c
-      LEFT JOIN spots s ON c.id = s.category_id AND s.status = 1
+      FROM spot_categories c
+      LEFT JOIN spots s ON c.id = s.category_id AND s.status = 'active'
       GROUP BY c.id, c.name
       HAVING count > 0
       ORDER BY count DESC
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
         COUNT(*) as total_spots,
         COALESCE(SUM(view_count), 0) as total_views
       FROM spots
-      WHERE status = 1
+      WHERE status = 'active'
     `)[0]
 
     // Format avg_rating to one decimal place

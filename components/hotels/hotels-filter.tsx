@@ -32,7 +32,7 @@ export function HotelsFilter() {
   }
 
   const handleStarChange = (value: string) => {
-    router.push(`/hotels?${createQueryString({ star: value === "all" ? null : value })}`)
+    router.push(`/hotels?${createQueryString({ star_rating: value === "all" ? null : value })}`)
   }
 
   const handleSortChange = (value: string) => {
@@ -44,7 +44,7 @@ export function HotelsFilter() {
     router.push("/hotels")
   }
 
-  const hasFilters = searchParams.get("search") || searchParams.get("star") || searchParams.get("sort")
+  const hasFilters = searchParams.get("search") || searchParams.get("star_rating") || searchParams.get("sort")
 
   return (
     <div className="bg-card rounded-lg border p-4 mb-6">
@@ -64,7 +64,7 @@ export function HotelsFilter() {
         </div>
 
         <div className="flex gap-2">
-          <Select defaultValue={searchParams.get("star") || "all"} onValueChange={handleStarChange}>
+          <Select defaultValue={searchParams.get("star_rating") || "all"} onValueChange={handleStarChange}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="星级筛选" />
             </SelectTrigger>

@@ -1,19 +1,36 @@
 import { notFound } from "next/navigation"
-import { Card, CardContent } from "@/components/ui/card"
+import { ActivityDetail } from "@/components/activities/activity-detail"
+import type { Activity } from "@/lib/types"
+import { dbGet, dbRun } from "@/lib/db-utils"
 
-export default function DetailPage({
+export default async function ActivityDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
+  const { id } = await params
+
+  // 获取活动信息
+  const activityRaw = dbGet(`
+    SELECT *
+    FROM activities
+    WHERE id = ? AND status = 'active'
+  `, [id])
+
+  if (!activityRaw) {
+    notFound()
+  }
+
+  // 解析 JSON 字段
+  const activity: Activity = {
+    ...activityRaw,
+    images: activityRaw.images ? JSON.parse(activityRaw.images) : [],
+    is_active: activityRaw.status === 'active',
+  } as Activity
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <Card>
-        <CardContent className="p-8 text-center">
-          <h1 className="text-2xl font-bold mb-4">功能开发中</h1>
-          <p className="text-muted-foreground">该详情页正在使用 SQLite 重构中,敬请期待!</p>
-        </CardContent>
-      </Card>
+      <ActivityDetail activity={activity} />
     </div>
   )
 }

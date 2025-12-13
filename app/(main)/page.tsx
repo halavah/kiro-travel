@@ -20,7 +20,7 @@ export default async function HomePage() {
   // 获取活动
   const activities = dbQuery<Activity>(`
     SELECT * FROM activities
-    WHERE is_active = 1
+    WHERE status = 'active'
     ORDER BY created_at DESC
     LIMIT 3
   `)

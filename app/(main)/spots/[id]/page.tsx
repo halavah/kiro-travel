@@ -44,7 +44,7 @@ export default async function SpotDetailPage({
   // 获取门票
   const tickets = dbQuery<Ticket>(`
     SELECT * FROM tickets
-    WHERE spot_id = ? AND is_active = 1
+    WHERE spot_id = ? AND status = 'active'
   `, [id])
 
   // 获取点赞数
@@ -84,6 +84,8 @@ export default async function SpotDetailPage({
 
   const spotWithMeta = {
     ...spot,
+    images: spot.images ? JSON.parse(spot.images) : [],
+    category: spot.category_name ? { name: spot.category_name } : null,
     likes_count: likesCount,
     comments_count: comments.length,
     is_liked: isLiked,

@@ -50,13 +50,20 @@ export default async function SpotsPage({
   }
 
   // 获取景点
-  const spots = dbQuery<Spot>(`
+  const spotsRaw = dbQuery(`
     SELECT s.*, c.name as category_name
     FROM spots s
     LEFT JOIN spot_categories c ON s.category_id = c.id
     ${whereClause}
     ORDER BY ${orderBy}
   `, queryParams)
+
+  // 解��� JSON 字段
+  const spots: Spot[] = spotsRaw.map((spot: any) => ({
+    ...spot,
+    images: spot.images ? JSON.parse(spot.images) : [],
+    category: spot.category_name ? { name: spot.category_name } : null,
+  }))
 
   return (
     <div className="container mx-auto px-4 py-8">

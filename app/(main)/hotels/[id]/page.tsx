@@ -1,19 +1,66 @@
 import { notFound } from "next/navigation"
-import { Card, CardContent } from "@/components/ui/card"
+import { HotelDetail } from "@/components/hotels/hotel-detail"
+import type { Hotel, HotelRoom } from "@/lib/types"
+import { dbGet, dbQuery } from "@/lib/db-utils"
+import { cookies } from "next/headers"
+import { verifyToken } from "@/lib/auth"
 
-export default function DetailPage({
+export default async function HotelDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
+  const { id } = await params
+
+  // 获取酒店信息
+  const hotelRaw = dbGet(
+    `
+    SELECT * FROM hotels
+    WHERE id = ? AND status = 'active'
+  `,
+    [id],
+  )
+
+  if (!hotelRaw) {
+    notFound()
+  }
+
+  // 获取房间列表
+  const roomsRaw = dbQuery(
+    `
+    SELECT * FROM hotel_rooms
+    WHERE hotel_id = ? AND status = 'active'
+    ORDER BY price ASC
+  `,
+    [id],
+  )
+
+  // 解析 JSON 字段
+  const hotel: Hotel & { rooms: HotelRoom[] } = {
+    ...hotelRaw,
+    images: hotelRaw.images ? JSON.parse(hotelRaw.images) : [],
+    amenities: hotelRaw.amenities ? JSON.parse(hotelRaw.amenities) : [],
+    is_active: hotelRaw.status === "active",
+    rooms: roomsRaw.map((room: any) => ({
+      ...room,
+      images: room.images ? JSON.parse(room.images) : [],
+      amenities: room.amenities ? JSON.parse(room.amenities) : [],
+      is_active: room.status === "active",
+    })),
+  }
+
+  // 获取用户登录状态
+  const cookieStore = await cookies()
+  const token = cookieStore.get("token")?.value
+  let isLoggedIn = false
+  if (token) {
+    const decoded = verifyToken(token)
+    isLoggedIn = !!decoded
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <Card>
-        <CardContent className="p-8 text-center">
-          <h1 className="text-2xl font-bold mb-4">功能开发中</h1>
-          <p className="text-muted-foreground">该详情页正在使用 SQLite 重构中,敬请期待!</p>
-        </CardContent>
-      </Card>
+      <HotelDetail hotel={hotel} isLoggedIn={isLoggedIn} />
     </div>
   )
 }

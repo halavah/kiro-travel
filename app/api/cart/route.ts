@@ -108,13 +108,35 @@ export async function POST(req: NextRequest) {
 
     // #region agent log
     // 记录添加到购物车尝试
-    fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'api/cart/route.ts:107', message: '添加到购物车尝试', data: { hasToken: !!token, tokenLength: token?.length }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'A' }) }).catch(() => { });
+    fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'api/cart/route.ts:107',
+        message: '添加到购物车尝试',
+        data: { hasToken: !!token, tokenLength: token?.length },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        hypothesisId: 'A'
+      })
+    }).catch(() => { });
     // #endregion
 
     if (!token) {
       // #region agent log
       // 记录token缺失
-      fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'api/cart/route.ts:110', message: 'token缺失', data: {}, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'A' }) }).catch(() => { });
+      fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'api/cart/route.ts:110',
+          message: 'token缺失',
+          data: {},
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          hypothesisId: 'A'
+        })
+      }).catch(() => { });
       // #endregion
 
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -124,31 +146,63 @@ export async function POST(req: NextRequest) {
 
     // #region agent log
     // 记录token验证结果
-    fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'api/cart/route.ts:116', message: 'token验证结果', data: { hasDecoded: !!decoded, userId: decoded?.userId }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'A' }) }).catch(() => { });
+    fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'api/cart/route.ts:116',
+        message: 'token验证结果',
+        data: { hasDecoded: !!decoded, userId: decoded?.userId }
+      })
+    }).catch(() => { });
     // #endregion
 
     if (!decoded) {
       // #region agent log
       // 记录token验证失败
-      fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'api/cart/route.ts:119', message: 'token验证失败', data: {}, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'A' }) }).catch(() => { });
+      fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'api/cart/route.ts:119',
+          message: 'token验证失败',
+          data: {}
+        })
+      }).catch(() => { });
       // #endregion
 
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    const body: await req.json()
+    const body = await req.json()
     const { ticket_id, quantity = 1 } = body
 
     // #region agent log
     // 记录请求体
-    fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'api/cart/route.ts:121', message: '请求体', data: { ticket_id, quantity }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'A' }) }).catch(() => { });
+    fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'api/cart/route.ts:121',
+        message: '请求体',
+        data: { ticket_id, quantity }
+      })
+    }).catch(() => { });
     // #endregion
 
     // 验证输入
     if (!ticket_id) {
       // #region agent log
       // 记录ticket_id缺失
-      fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'api/cart/route.ts:122', message: 'ticket_id缺失', data: {}, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'A' }) }).catch(() => { });
+      fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'api/cart/route.ts:122',
+          message: 'ticket_id缺失',
+          data: {}
+        })
+      }).catch(() => { });
       // #endregion
 
       return NextResponse.json({ error: 'ticket_id is required' }, { status: 400 })
@@ -157,7 +211,15 @@ export async function POST(req: NextRequest) {
     if (quantity < 1) {
       // #region agent log
       // 记录数量不足
-      fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'api/cart/route.ts:126', message: '数量不足', data: {}, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'A' }) }).catch(() => { });
+      fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'api/cart/route.ts:126',
+          message: '数量不足',
+          data: {}
+        })
+      }).catch(() => { });
       // #endregion
 
       return NextResponse.json({ error: 'Quantity must be at least 1' }, { status: 400 })
@@ -172,13 +234,29 @@ export async function POST(req: NextRequest) {
 
     // #region agent log
     // 记录门票查询结果
-    fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'api/cart/route.ts:133', message: '门票查询结果', data: { hasTicket: !!ticket, ticketStatus: ticket?.status }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'A' }) }).catch(() => { });
+    fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'api/cart/route.ts:133',
+        message: '门票查询结果',
+        data: { hasTicket: !!ticket, ticketStatus: ticket?.status }
+      })
+    }).catch(() => { });
     // #endregion
 
     if (!ticket) {
       // #region agent log
       // 记录门票不存在
-      fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'api/cart/route.ts:138', message: '门票不存在', data: {}, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'A' }) }).catch(() => { });
+      fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'api/cart/route.ts:138',
+          message: '门票不存在',
+          data: {}
+        })
+      }).catch(() => { });
       // #endregion
 
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 })
@@ -187,7 +265,15 @@ export async function POST(req: NextRequest) {
     if (!ticket.status) {
       // #region agent log
       // 记录门票不可用
-      fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'api/cart/route.ts:141', message: '门票不可用', data: {}, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'A' }) }).catch(() => { });
+      fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'api/cart/route.ts:141',
+          message: '门票不可用',
+          data: {}
+        })
+      }).catch(() => { });
       // #endregion
 
       return NextResponse.json({ error: 'Ticket is not available' }, { status: 400 })
@@ -196,7 +282,15 @@ export async function POST(req: NextRequest) {
     if (ticket.stock < quantity) {
       // #region agent log
       // 记录库存不足
-      fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'api/cart/route.ts:145', message: '库存不足', data: { available: ticket.stock, requested: quantity }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'A' }) }).catch(() => { });
+      fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: 'api/cart/route.ts:145',
+          message: '库存不足',
+          data: { available: ticket.stock, requested: quantity }
+        })
+      }).catch(() => { });
       // #endregion
 
       return NextResponse.json({
@@ -214,7 +308,15 @@ export async function POST(req: NextRequest) {
 
     // #region agent log
     // 记录数据库插入结果
-    fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'api/cart/route.ts:158', message: '数据库插入结果', data: { lastInsertRowid, changes }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'A' }) }).catch(() => { });
+    fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'api/cart/route.ts:158',
+        message: '数据库插入结果',
+        data: { lastInsertRowid }
+      })
+    }).catch(() => { });
     // #endregion
 
     return NextResponse.json({
@@ -227,7 +329,15 @@ export async function POST(req: NextRequest) {
 
     // #region agent log
     // 记录添加到购物车错误
-    fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'api/cart/route.ts:165', message: '添加到购物车错误', data: { error: error?.message }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'A' }) }).catch(() => { });
+    fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'api/cart/route.ts:165',
+        message: '添加到购物车错误',
+        data: { error: String(error) }
+      })
+    }).catch(() => { });
     // #endregion
 
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

@@ -66,7 +66,7 @@ export default async function TicketsPage({
         id: ticket.spot_id,
         name: ticket.spot_name,
         location: ticket.spot_location,
-        images: ticket.spot_images,
+        images: ticket.spot_images ? JSON.parse(ticket.spot_images) : [],
         category: ticket.category_name ? { name: ticket.category_name } : undefined
       } : undefined
     }

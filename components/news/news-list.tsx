@@ -7,6 +7,7 @@ import type { News } from "@/lib/types"
 
 interface NewsListProps {
   news: News[]
+  totalCount: number
 }
 
 export function NewsList({ news }: NewsListProps) {
