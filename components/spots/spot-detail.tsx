@@ -298,7 +298,7 @@ export function SpotDetail({ spot, tickets, isLoggedIn }: SpotDetailProps) {
                   onClick={() => {
                     navigator.share({
                       title: spot.name,
-                      text: spot.description,
+                      text: spot.description || "",
                       url: window.location.href
                     }).catch(() => {
                       // 如果不支持分享API，复制链接到剪贴板

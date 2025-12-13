@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { User, Mail, Phone, Calendar, Shield, Ticket, Hotel, Heart, MessageSquare, Loader2 } from "lucide-react"
-import type { User as UserType } from "@/lib/types"
+import type { Profile as UserType } from "@/lib/types"
 
 const fetcher = (url: string) => {
   const token = localStorage.getItem('token')

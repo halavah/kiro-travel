@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
+import { getTokenFromRequest } from '@/lib/middleware'
 import { dbQuery, dbGet } from '@/lib/db-utils'
 
 // GET - 获取数据分析（管理员）
 export async function GET(req: NextRequest) {
   try {
-    const token = req.cookies.get('token')?.value
+    const token = getTokenFromRequest(req)
 
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

@@ -5,16 +5,17 @@ import { validateAuth, checkRole } from '@/lib/auth'
 // GET /api/hotels/[id] - 获取酒店详情
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const hotel = dbGet(`
       SELECT h.*, COUNT(DISTINCT hr.id) as room_count
       FROM hotels h
       LEFT JOIN hotel_rooms hr ON h.id = hr.hotel_id AND hr.status = 'active'
       WHERE h.id = ?
       GROUP BY h.id
-    `, [params.id])
+    `, [id])
 
     if (!hotel) {
       return NextResponse.json(
@@ -43,9 +44,10 @@ export async function GET(
 // PUT /api/hotels/[id] - 更新酒店信息 (管理员权限)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await validateAuth(request)
     if (!user || !checkRole(user.role, ['admin'])) {
       return NextResponse.json(
@@ -121,7 +123,7 @@ export async function PUT(
     }
 
     updateFields.push('updated_at = datetime("now")')
-    updateValues.push(params.id)
+    updateValues.push(id)
 
     const sql = `
       UPDATE hotels
@@ -131,7 +133,7 @@ export async function PUT(
 
     dbRun(sql, updateValues)
 
-    const updatedHotel = dbGet('SELECT * FROM hotels WHERE id = ?', [params.id])
+    const updatedHotel = dbGet('SELECT * FROM hotels WHERE id = ?', [id])
 
     return NextResponse.json({
       success: true,
@@ -153,9 +155,10 @@ export async function PUT(
 // DELETE /api/hotels/[id] - 删除酒店 (管理员权限)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await validateAuth(request)
     if (!user || !checkRole(user.role, ['admin'])) {
       return NextResponse.json(
@@ -166,7 +169,7 @@ export async function DELETE(
 
     // 软删除：将状态设置为 inactive
     dbRun('UPDATE hotels SET status = ?, updated_at = datetime("now") WHERE id = ?',
-      ['inactive', params.id])
+      ['inactive', id])
 
     return NextResponse.json({
       success: true,

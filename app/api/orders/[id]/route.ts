@@ -6,9 +6,10 @@ import { verifyToken } from '@/lib/auth'
 // GET - 获取订单详情
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const token = getTokenFromRequest(req)
 
     if (!token) {
@@ -19,8 +20,6 @@ export async function GET(
     if (!decoded) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
-
-    const orderId = params.id
 
     // 获取订单详情
     const order = dbGet(`
@@ -34,7 +33,7 @@ export async function GET(
         o.note
       FROM orders o
       WHERE o.id = ? AND o.user_id = ?
-    `, [orderId, decoded.userId])
+    `, [id, decoded.userId])
 
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
@@ -52,7 +51,7 @@ export async function GET(
       FROM order_items oi
       WHERE oi.order_id = ?
       ORDER BY oi.created_at
-    `, [orderId])
+    `, [id])
 
     return NextResponse.json({
       order: {

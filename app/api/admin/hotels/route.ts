@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
+import { getTokenFromRequest } from '@/lib/middleware'
 import { dbQuery, dbGet, dbRun } from '@/lib/db-utils'
 import { randomUUID } from 'crypto'
 
 // GET - 获取所有酒店（管理员）
 export async function GET(req: NextRequest) {
   try {
-    const token = req.cookies.get('token')?.value
+    const token = getTokenFromRequest(req)
 
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -72,7 +73,7 @@ export async function GET(req: NextRequest) {
 // POST - 创建酒店（管理员）
 export async function POST(req: NextRequest) {
   try {
-    const token = req.cookies.get('token')?.value
+    const token = getTokenFromRequest(req)
 
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

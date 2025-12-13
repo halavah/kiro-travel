@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
+import { getTokenFromRequest } from '@/lib/middleware'
 import { dbGet, dbRun, dbQuery } from '@/lib/db-utils'
 import { writeFileSync, mkdirSync, existsSync } from 'fs'
 import { join } from 'path'
@@ -8,7 +9,7 @@ import { execSync } from 'child_process'
 // GET - 获取系统设置（管理员）
 export async function GET(req: NextRequest) {
   try {
-    const token = req.cookies.get('token')?.value
+    const token = getTokenFromRequest(req)
 
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -70,7 +71,7 @@ export async function GET(req: NextRequest) {
 // POST - 保存系统设置（管理员）
 export async function POST(req: NextRequest) {
   try {
-    const token = req.cookies.get('token')?.value
+    const token = getTokenFromRequest(req)
 
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

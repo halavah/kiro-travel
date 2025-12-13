@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
+import { getTokenFromRequest } from '@/lib/middleware'
 import { dbGet, dbRun } from '@/lib/db-utils'
 
 // PATCH - 更新用户信息（管理员）
@@ -8,7 +9,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const token = req.cookies.get('token')?.value
+    const token = getTokenFromRequest(req)
 
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

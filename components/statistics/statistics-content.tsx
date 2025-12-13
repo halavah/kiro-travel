@@ -63,7 +63,7 @@ export function StatisticsContent() {
         '分类名称': '总计',
         '景点数量': totalSpots,
         '总浏览量': totalViews,
-        '平均评分': avgRating,
+        '平均评分': Number(avgRating),
         '占比': '100%'
       })
 
@@ -273,7 +273,7 @@ export function StatisticsContent() {
                       cx="50%"
                       cy="50%"
                       labelLine={true}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                       outerRadius={150}
                       fill="#8884d8"
                       dataKey="value"

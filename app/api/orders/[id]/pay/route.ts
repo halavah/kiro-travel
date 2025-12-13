@@ -6,9 +6,10 @@ import { verifyToken } from '@/lib/auth'
 // POST - 支付订单
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const token = getTokenFromRequest(req)
 
     if (!token) {
@@ -20,14 +21,12 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    const orderId = params.id
-
     // 检查订单是否存在且属于当前用户
     const order = dbGet(`
       SELECT id, status, total_amount
       FROM orders
       WHERE id = ? AND user_id = ?
-    `, [orderId, decoded.userId])
+    `, [id, decoded.userId])
 
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
@@ -42,7 +41,7 @@ export async function POST(
       UPDATE orders
       SET status = 'paid', paid_at = datetime('now')
       WHERE id = ?
-    `, [orderId])
+    `, [id])
 
     return NextResponse.json({
       success: true,

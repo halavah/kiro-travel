@@ -31,5 +31,5 @@ export function validateRequest(request: NextRequest): { userId?: string; error?
     return { error: '无效的认证令牌' }
   }
 
-  return { userId: decoded.userId, email: decoded.email, role: decoded.role }
+  return { userId: decoded.userId }
 }

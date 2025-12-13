@@ -73,9 +73,9 @@ export function RecommendedSpots() {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     <Badge className="absolute top-3 left-3 bg-primary">推荐</Badge>
-                    {spot.category_name && (
+                    {spot.category?.name && (
                       <Badge variant="secondary" className="absolute top-3 right-3">
-                        {spot.category_name}
+                        {spot.category.name}
                       </Badge>
                     )}
                   </div>
@@ -91,7 +91,7 @@ export function RecommendedSpots() {
                       </div>
                       <div className="flex items-center gap-1">
                         <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                        <span className="font-medium">{spot.average_rating?.toFixed(1) || "5.0"}</span>
+                        <span className="font-medium">{spot.rating?.toFixed(1) || "5.0"}</span>
                       </div>
                     </div>
                     <div className="mt-3 pt-3 border-t flex items-center justify-between">

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
+import { getTokenFromRequest } from '@/lib/middleware'
 import { dbGet, dbRun, dbQuery } from '@/lib/db-utils'
 
 // PATCH - 更新门票（管理员）
@@ -8,7 +9,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const token = req.cookies.get('token')?.value
+    const token = getTokenFromRequest(req)
 
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -126,7 +127,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const token = req.cookies.get('token')?.value
+    const token = getTokenFromRequest(req)
 
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

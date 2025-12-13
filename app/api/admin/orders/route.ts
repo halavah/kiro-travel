@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import { dbQuery, dbGet } from '@/lib/db-utils'
+import { getTokenFromRequest } from '@/lib/middleware'
 
 // GET - 获取所有订单（管理员）
 export async function GET(req: NextRequest) {
   try {
-    const token = req.cookies.get('token')?.value
+    const token = getTokenFromRequest(req)
 
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -48,7 +49,7 @@ export async function GET(req: NextRequest) {
         o.status,
         o.paid_at,
         o.created_at,
-        p.username,
+        p.full_name,
         p.email,
         COUNT(oi.id) as item_count
       FROM orders o

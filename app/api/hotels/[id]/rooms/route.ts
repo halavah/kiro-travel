@@ -5,14 +5,15 @@ import { validateAuth, checkRole } from '@/lib/auth'
 // GET /api/hotels/[id]/rooms - 获取酒店的所有房间
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const { searchParams } = new URL(request.url)
     const available = searchParams.get('available') === 'true'
 
     let whereClause = 'WHERE hotel_id = ? AND status = ?'
-    const queryParams: any[] = [params.id, 'active']
+    const queryParams: any[] = [id, 'active']
 
     if (available) {
       whereClause += ' AND stock > 0'
@@ -50,9 +51,10 @@ export async function GET(
 // POST /api/hotels/[id]/rooms - 为酒店添加新房间 (管理员权限)
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await validateAuth(request)
     if (!user || !checkRole(user.role, ['admin'])) {
       return NextResponse.json(
@@ -62,7 +64,7 @@ export async function POST(
     }
 
     // 验证酒店是否存在
-    const hotel = dbGet('SELECT id FROM hotels WHERE id = ?', [params.id])
+    const hotel = dbGet('SELECT id FROM hotels WHERE id = ?', [id])
     if (!hotel) {
       return NextResponse.json(
         { success: false, error: '酒店不存在' },
@@ -89,7 +91,6 @@ export async function POST(
       )
     }
 
-    const id = `room_${Date.now()}`
     const imagesJson = JSON.stringify(images || [])
     const amenitiesJson = JSON.stringify(amenities || [])
 
@@ -100,12 +101,13 @@ export async function POST(
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
     `
 
+    const roomId = `room_${Date.now()}`
     dbRun(sql, [
-      id, params.id, name, description, price, capacity || 2,
+      roomId, id, name, description, price, capacity || 2,
       imagesJson, amenitiesJson, stock || 1
     ])
 
-    const room = dbGet('SELECT * FROM hotel_rooms WHERE id = ?', [id])
+    const room = dbGet('SELECT * FROM hotel_rooms WHERE id = ?', [roomId])
 
     return NextResponse.json({
       success: true,

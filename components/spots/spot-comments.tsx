@@ -147,14 +147,14 @@ export function SpotComments({ spotId, isLoggedIn }: SpotCommentsProps) {
             {comments.map((comment) => (
               <div key={comment.id} className="flex gap-3 p-4 rounded-lg bg-muted/20">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={comment.avatar || undefined} />
+                  <AvatarImage src={comment.user?.avatar_url || undefined} />
                   <AvatarFallback className="bg-primary/10 text-primary">
-                    {comment.nickname?.[0] || "U"}
+                    {comment.user?.full_name?.[0] || "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium">{comment.nickname || "匿名用户"}</span>
+                    <span className="font-medium">{comment.user?.full_name || "匿名用户"}</span>
                     <div className="flex gap-0.5">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <Star
