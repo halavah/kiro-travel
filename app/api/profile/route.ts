@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken } from '@/lib/auth'
+import { getTokenFromRequest } from '@/lib/middleware'
 import { dbGet, dbRun } from '@/lib/db-utils'
+import { verifyToken } from '@/lib/auth'
 import bcrypt from 'bcryptjs'
 
 // GET - 获取用户资料
 export async function GET(req: NextRequest) {
   try {
-    const token = req.cookies.get('token')?.value
+    const token = getTokenFromRequest(req)
 
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -41,7 +42,7 @@ export async function GET(req: NextRequest) {
 // PATCH - 更新用户资料
 export async function PATCH(req: NextRequest) {
   try {
-    const token = req.cookies.get('token')?.value
+    const token = getTokenFromRequest(req)
 
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

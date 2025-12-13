@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken } from '@/lib/auth'
+import { getTokenFromRequest } from '@/lib/middleware'
 import { dbQuery, dbGet, dbRun } from '@/lib/db-utils'
+import { verifyToken } from '@/lib/auth'
 import { randomUUID } from 'crypto'
 
 // GET - 获取购物车列表
 export async function GET(req: NextRequest) {
   try {
-    const token = req.cookies.get('token')?.value
+    const token = getTokenFromRequest(req)
 
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -79,7 +80,7 @@ export async function GET(req: NextRequest) {
 // POST - 添加商品到购物车
 export async function POST(req: NextRequest) {
   try {
-    const token = req.cookies.get('token')?.value
+    const token = getTokenFromRequest(req)
 
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -168,7 +169,7 @@ export async function POST(req: NextRequest) {
 // DELETE - 清空购物车
 export async function DELETE(req: NextRequest) {
   try {
-    const token = req.cookies.get('token')?.value
+    const token = getTokenFromRequest(req)
 
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

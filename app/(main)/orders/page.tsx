@@ -33,8 +33,18 @@ export default function OrdersPage() {
 
   const fetchOrders = async (status: string = 'all') => {
     try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        router.push('/login')
+        return
+      }
+
       const url = status === 'all' ? '/api/orders' : `/api/orders?status=${status}`
-      const res = await fetch(url)
+      const res = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
 
       if (res.status === 401) {
         router.push('/login')
@@ -56,7 +66,7 @@ export default function OrdersPage() {
 
   useEffect(() => {
     fetchOrders(activeTab)
-  }, [activeTab])
+  }, [activeTab, router])
 
   const handleViewOrder = (orderId: string) => {
     router.push(`/orders/${orderId}`)

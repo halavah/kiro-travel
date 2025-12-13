@@ -16,6 +16,7 @@ import type { User as UserType } from "@/lib/types"
 const fetcher = (url: string) => {
   const token = localStorage.getItem('token')
   if (!token) {
+    window.location.href = '/login'
     throw new Error('未登录')
   }
   return fetch(url, {
@@ -23,6 +24,10 @@ const fetcher = (url: string) => {
       'Authorization': `Bearer ${token}`
     }
   }).then(r => {
+    if (r.status === 401) {
+      window.location.href = '/login'
+      throw new Error('未登录')
+    }
     if (!r.ok) throw new Error('获取数据失败')
     return r.json()
   })

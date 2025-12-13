@@ -4,13 +4,12 @@
   "private": true,
   "scripts": {
     "build": "next build",
-    "dev": "next dev",
-    "lint": "eslint .",
+    "dev": "node scripts/init-db.js && next dev",
     "start": "next start",
+    "lint": "eslint .",
     "setup": "node scripts/setup.mjs",
-    "db:init": "node scripts/init-sqlite.mjs",
-    "db:setup": "node scripts/init-sqlite.mjs",
-    "db:reset": "rm -f data/database.db && npm run db:init",
+    "db:init": "node scripts/init-db.js",
+    "db:reset": "rm -f data/database.sqlite && npm run db:init",
     "db:fts": "node scripts/setup-fts.mjs"
   },
   "dependencies": {
