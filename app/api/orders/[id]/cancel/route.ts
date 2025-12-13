@@ -5,7 +5,7 @@ import { dbGet, dbRun, dbQuery } from '@/lib/db-utils'
 // POST - 取消订单
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const token = req.cookies.get('token')?.value
@@ -19,35 +19,31 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    const { id } = await params
+    const orderId = params.id
 
     // 检查订单是否存在且属于当前用户
     const order = dbGet(`
-      SELECT id, user_id, status
+      SELECT id, status
       FROM orders
-      WHERE id = ?
-    `, [id])
+      WHERE id = ? AND user_id = ?
+    `, [orderId, decoded.userId])
 
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
-    }
-
-    if (order.user_id !== decoded.userId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     if (order.status !== 'pending') {
       return NextResponse.json({ error: 'Order cannot be cancelled' }, { status: 400 })
     }
 
-    // 获取订单项以恢复库存
+    // 获取订单项并恢复库存
     const orderItems = dbQuery(`
       SELECT ticket_id, quantity
       FROM order_items
       WHERE order_id = ?
-    `, [id])
+    `, [orderId])
 
-    // 恢复门票库存
+    // 恢复库存
     for (const item of orderItems) {
       dbRun(`
         UPDATE tickets
@@ -61,18 +57,10 @@ export async function POST(
       UPDATE orders
       SET status = 'cancelled'
       WHERE id = ?
-    `, [id])
-
-    // 返回更新后的订单
-    const updatedOrder = dbGet(`
-      SELECT id, order_no, total_amount, status, created_at
-      FROM orders
-      WHERE id = ?
-    `, [id])
+    `, [orderId])
 
     return NextResponse.json({
       success: true,
-      data: updatedOrder,
       message: 'Order cancelled successfully'
     })
 

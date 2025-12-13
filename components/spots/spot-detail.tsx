@@ -18,6 +18,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Calendar,
+  ShoppingCart,
 } from "lucide-react"
 import Link from "next/link"
 import type { Spot, Ticket as TicketType } from "@/lib/types"
@@ -290,9 +292,31 @@ export function SpotDetail({ spot, tickets, isLoggedIn }: SpotDetailProps) {
                   )}
                   {isFavorited ? "已收藏" : "收藏"}
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigator.share({
+                      title: spot.name,
+                      text: spot.description,
+                      url: window.location.href
+                    }).catch(() => {
+                      // 如果不支持分享API，复制链接到剪贴板
+                      navigator.clipboard.writeText(window.location.href)
+                      toast.success("链接已复制到剪贴板")
+                    })
+                  }}
+                >
                   <Share2 className="h-4 w-4 mr-1" />
                   分享
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(`/spots/${spot.id}/booking`)}
+                >
+                  <Ticket className="h-4 w-4 mr-1" />
+                  立即预订
                 </Button>
               </div>
             </CardContent>
@@ -311,31 +335,57 @@ export function SpotDetail({ spot, tickets, isLoggedIn }: SpotDetailProps) {
             <CardContent className="space-y-3">
               {tickets.length > 0 ? (
                 tickets.map((ticket) => (
-                  <div key={ticket.id} className="p-3 rounded-lg border bg-muted/30">
-                    <div className="flex items-start justify-between gap-2">
+                  <div key={ticket.id} className="p-4 rounded-lg border bg-card">
+                    <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
-                        <div className="font-medium">{ticket.name}</div>
-                        <p className="text-xs text-muted-foreground mt-1">{ticket.description}</p>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold">{ticket.name}</h3>
+                          <Badge variant={ticket.stock < 20 ? "destructive" : "secondary"}>
+                            {ticket.stock < 20 ? "库存紧张" : "有票"}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">{ticket.description || "标准门票"}</p>
                         {ticket.valid_from && ticket.valid_to && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            有效期: {new Date(ticket.valid_from).toLocaleDateString("zh-CN")} -{" "}
-                            {new Date(ticket.valid_to).toLocaleDateString("zh-CN")}
+                            <span className="inline-flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              有效期: {new Date(ticket.valid_from).toLocaleDateString("zh-CN")} -{" "}
+                              {new Date(ticket.valid_to).toLocaleDateString("zh-CN")}
+                            </span>
                           </p>
                         )}
                       </div>
                       <div className="text-right">
-                        <div className="text-lg font-bold text-primary">¥{ticket.price}</div>
-                        <div className="text-xs text-muted-foreground">库存: {ticket.stock}</div>
+                        <div className="text-2xl font-bold text-primary">¥{ticket.price}</div>
+                        <div className={`text-sm ${ticket.stock < 20 ? 'text-red-600' : 'text-muted-foreground'}`}>
+                          剩余: {ticket.stock} 张
+                        </div>
                       </div>
                     </div>
-                    <Button
-                      className="w-full mt-3"
-                      size="sm"
-                      onClick={() => handleAddToCart(ticket.id)}
-                      disabled={ticket.stock === 0 || isLoading === ticket.id}
-                    >
-                      {isLoading === ticket.id ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : "加入购物车"}
-                    </Button>
+
+                    <div className="flex items-center gap-2 mt-3">
+                      <Button
+                        className="flex-1"
+                        onClick={() => handleAddToCart(ticket.id)}
+                        disabled={ticket.stock === 0 || isLoading === ticket.id}
+                      >
+                        {isLoading === ticket.id ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <>
+                            <ShoppingCart className="h-4 w-4 mr-2" />
+                            加入购物车
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push(`/spots/${spot.id}/booking?ticket=${ticket.id}`)}
+                      >
+                        立即预订
+                      </Button>
+                    </div>
                   </div>
                 ))
               ) : (

@@ -1,0 +1,436 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Search, Plus, Edit, Trash2, Eye } from "lucide-react"
+import Link from "next/link"
+import { toast } from "sonner"
+
+interface Ticket {
+  id: string
+  name: string
+  description: string
+  price: number
+  stock: number
+  status: 'active' | 'inactive'
+  valid_from: string
+  valid_to: string
+  spot_name: string
+  spot_location: string
+  sold_count: number
+}
+
+export default function AdminTicketsPage() {
+  const [tickets, setTickets] = useState<Ticket[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [editingTicket, setEditingTicket] = useState<Ticket | null>(null)
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    price: '',
+    stock: '',
+    spot_id: '',
+    valid_from: '',
+    valid_to: '',
+    status: 'active' as 'active' | 'inactive'
+  })
+  const [spots, setSpots] = useState<any[]>([])
+
+  const fetchTickets = async () => {
+    try {
+      const params = new URLSearchParams()
+      if (statusFilter !== 'all') params.append('status', statusFilter)
+
+      const res = await fetch(`/api/admin/tickets?${params}`)
+      if (!res.ok) throw new Error('Failed to fetch tickets')
+
+      const data = await res.json()
+      setTickets(data.tickets || [])
+    } catch (error) {
+      console.error('Error fetching tickets:', error)
+      toast.error('获取门票列表失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchSpots = async () => {
+    try {
+      const res = await fetch('/api/admin/spots')
+      if (!res.ok) throw new Error('Failed to fetch spots')
+
+      const data = await res.json()
+      setSpots(data.spots || [])
+    } catch (error) {
+      console.error('Error fetching spots:', error)
+    }
+  }
+
+  useEffect(() => {
+    fetchTickets()
+    fetchSpots()
+  }, [statusFilter])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    try {
+      const token = localStorage.getItem('token')
+      const url = editingTicket ? `/api/admin/tickets/${editingTicket.id}` : '/api/admin/tickets'
+      const method = editingTicket ? 'PATCH' : 'POST'
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          ...formData,
+          price: parseFloat(formData.price),
+          stock: parseInt(formData.stock)
+        })
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || '操作失败')
+      }
+
+      toast.success(editingTicket ? '门票更新成功' : '门票创建成功')
+      setIsAddDialogOpen(false)
+      setEditingTicket(null)
+      setFormData({
+        name: '',
+        description: '',
+        price: '',
+        stock: '',
+        spot_id: '',
+        valid_from: '',
+        valid_to: '',
+        status: 'active'
+      })
+      fetchTickets()
+    } catch (error: any) {
+      toast.error(error.message || '操作失败')
+    }
+  }
+
+  const handleEdit = (ticket: Ticket) => {
+    setEditingTicket(ticket)
+    setFormData({
+      name: ticket.name,
+      description: ticket.description,
+      price: ticket.price.toString(),
+      stock: ticket.stock.toString(),
+      spot_id: ticket.spot_name,
+      valid_from: ticket.valid_from,
+      valid_to: ticket.valid_to,
+      status: ticket.status
+    })
+    setIsAddDialogOpen(true)
+  }
+
+  const handleDelete = async (ticketId: string) => {
+    if (!confirm('确定要删除这个门票吗？')) return
+
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch(`/api/admin/tickets/${ticketId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || '删除失败')
+      }
+
+      toast.success('门票删除成功')
+      fetchTickets()
+    } catch (error: any) {
+      toast.error(error.message || '删除失败')
+    }
+  }
+
+  const filteredTickets = tickets.filter(ticket => {
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase()
+      return (
+        ticket.name.toLowerCase().includes(searchLower) ||
+        ticket.spot_name.toLowerCase().includes(searchLower) ||
+        ticket.spot_location.toLowerCase().includes(searchLower)
+      )
+    }
+    return true
+  })
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">门票管理</h1>
+        <div className="text-center py-12">加载中...</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">门票管理</h1>
+          <p className="text-muted-foreground">管理所有景点门票信息</p>
+        </div>
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={() => setEditingTicket(null)}>
+              <Plus className="h-4 w-4 mr-2" />
+              添加门票
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>{editingTicket ? '编辑门票' : '添加新门票'}</DialogTitle>
+              <DialogDescription>
+                {editingTicket ? '修改门票信息' : '创建一个新的景点门票'}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit}>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="name" className="text-right">
+                    门票名称
+                  </Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="col-span-3"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="spot_id" className="text-right">
+                    所属景点
+                  </Label>
+                  <Select
+                    value={formData.spot_id}
+                    onValueChange={(value) => setFormData({ ...formData, spot_id: value })}
+                  >
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="选择景点" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {spots.map((spot) => (
+                        <SelectItem key={spot.id} value={spot.id}>
+                          {spot.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="description" className="text-right">
+                    描述
+                  </Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="col-span-3"
+                    rows={3}
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="price" className="text-right">
+                    价格
+                  </Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    step="0.01"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    className="col-span-3"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="stock" className="text-right">
+                    库存
+                  </Label>
+                  <Input
+                    id="stock"
+                    type="number"
+                    value={formData.stock}
+                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                    className="col-span-3"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="valid_from" className="text-right">
+                    有效期开始
+                  </Label>
+                  <Input
+                    id="valid_from"
+                    type="date"
+                    value={formData.valid_from}
+                    onChange={(e) => setFormData({ ...formData, valid_from: e.target.value })}
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="valid_to" className="text-right">
+                    有效期结束
+                  </Label>
+                  <Input
+                    id="valid_to"
+                    type="date"
+                    value={formData.valid_to}
+                    onChange={(e) => setFormData({ ...formData, valid_to: e.target.value })}
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="status" className="text-right">
+                    状态
+                  </Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value: 'active' | 'inactive') => setFormData({ ...formData, status: value })}
+                  >
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">上架</SelectItem>
+                      <SelectItem value="inactive">下架</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit">
+                  {editingTicket ? '更新' : '创建'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* 筛选和搜索 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>筛选条件</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="搜索门票名称或景点"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="状态筛选" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部状态</SelectItem>
+                <SelectItem value="active">上架</SelectItem>
+                <SelectItem value="inactive">下架</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 门票列表 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>门票列表 ({filteredTickets.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>门票名称</TableHead>
+                <TableHead>景点</TableHead>
+                <TableHead>价格</TableHead>
+                <TableHead>库存/已售</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead>有效期</TableHead>
+                <TableHead>操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredTickets.map((ticket) => (
+                <TableRow key={ticket.id}>
+                  <TableCell className="font-medium">{ticket.name}</TableCell>
+                  <TableCell>
+                    <div>
+                      <p className="font-medium">{ticket.spot_name}</p>
+                      <p className="text-sm text-muted-foreground">{ticket.spot_location}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell>¥{ticket.price.toFixed(2)}</TableCell>
+                  <TableCell>
+                    <span className={ticket.stock < 20 ? 'text-red-600' : ''}>
+                      {ticket.stock} / {ticket.sold_count || 0}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={ticket.status === 'active' ? 'default' : 'secondary'}>
+                      {ticket.status === 'active' ? '上架' : '下架'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm">
+                      <div>{ticket.valid_from || '不限'}</div>
+                      <div>{ticket.valid_to || '不限'}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => handleEdit(ticket)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(ticket.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          {filteredTickets.length === 0 && (
+            <div className="text-center py-12 text-muted-foreground">
+              暂无门票数据
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

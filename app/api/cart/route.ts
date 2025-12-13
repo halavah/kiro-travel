@@ -46,38 +46,28 @@ export async function GET(req: NextRequest) {
     const items = cartItems.map((item: any) => {
       return {
         id: item.id,
-        user_id: decoded.userId,
-        ticket_id: item.ticket_id,
         quantity: item.quantity,
-        created_at: item.created_at,
-        ticket: item.ticket_id ? {
-          id: item.ticket_id,
-          name: item.ticket_name,
-          description: item.ticket_description,
-          price: item.ticket_price,
-          stock: item.ticket_stock,
-          valid_from: item.valid_from,
-          valid_to: item.valid_to,
-          status: item.status,
-          spot: item.spot_id ? {
-            id: item.spot_id,
-            name: item.spot_name,
-            location: item.spot_location,
-            images: item.spot_images ? JSON.parse(item.spot_images) : []
-          } : undefined
-        } : undefined
+        ticket_id: item.ticket_id,
+        ticket_name: item.ticket_name,
+        ticket_description: item.ticket_description,
+        ticket_price: item.ticket_price,
+        ticket_stock: item.ticket_stock,
+        spot_id: item.spot_id,
+        spot_name: item.spot_name,
+        spot_location: item.spot_location,
+        spot_images: item.spot_images ? JSON.parse(item.spot_images) : []
       }
     })
 
     // 计算总价
     const totalAmount = items.reduce((sum: number, item: any) => {
-      return sum + ((item.ticket?.price || 0) * item.quantity)
+      return sum + ((item.ticket_price || 0) * item.quantity)
     }, 0)
 
     return NextResponse.json({
-      data: items,
-      totalAmount,
-      count: items.length
+      success: true,
+      items,
+      totalAmount
     })
 
   } catch (error) {

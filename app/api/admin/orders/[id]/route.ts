@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import { dbQuery, dbGet } from '@/lib/db-utils'
 
-// GET - 获取订单详情
+// GET - 获取订单详情（管理员）
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const token = req.cookies.get('token')?.value
@@ -19,9 +19,18 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    const orderId = params.id
+    // 检查用户是否是管理员
+    const user = dbGet(`
+      SELECT role FROM profiles WHERE id = ?
+    `, [decoded.userId])
 
-    // 获取订单详情
+    if (!user || (user.role !== 'admin' && user.role !== 'guide')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const { id } = await params
+
+    // 查询订单基本信息
     const order = dbGet(`
       SELECT
         o.id,
@@ -30,17 +39,20 @@ export async function GET(
         o.status,
         o.paid_at,
         o.created_at,
-        o.note
+        p.username,
+        p.email,
+        p.phone
       FROM orders o
-      WHERE o.id = ? AND o.user_id = ?
-    `, [orderId, decoded.userId])
+      LEFT JOIN profiles p ON o.user_id = p.id
+      WHERE o.id = ?
+    `, [id])
 
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
-    // 获取订单项
-    const items = dbQuery(`
+    // 查询订单项
+    const orderItems = dbQuery(`
       SELECT
         oi.id,
         oi.ticket_name,
@@ -50,18 +62,18 @@ export async function GET(
         oi.created_at
       FROM order_items oi
       WHERE oi.order_id = ?
-      ORDER BY oi.created_at
-    `, [orderId])
+      ORDER BY oi.created_at ASC
+    `, [id])
 
     return NextResponse.json({
       order: {
         ...order,
-        items
+        items: orderItems
       }
     })
 
   } catch (error) {
-    console.error('Error fetching order:', error)
+    console.error('Error fetching admin order:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

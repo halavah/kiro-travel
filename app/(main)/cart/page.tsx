@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Trash2, Plus, Minus, ShoppingBag } from "lucide-react"
 import Image from 'next/image'
+import { toast } from "sonner"
 
 interface CartItem {
   id: string
@@ -70,14 +71,14 @@ export default function CartPage() {
 
       if (!res.ok) {
         const error = await res.json()
-        alert(error.error || 'Failed to update quantity')
+        toast.error(error.error || 'Failed to update quantity')
         return
       }
 
       await fetchCart()
     } catch (error) {
       console.error('Error updating quantity:', error)
-      alert('Failed to update quantity')
+      toast.error('Failed to update quantity')
     } finally {
       setUpdating(null)
     }
@@ -98,9 +99,10 @@ export default function CartPage() {
       }
 
       await fetchCart()
+      toast.success('商品已删除')
     } catch (error) {
       console.error('Error removing item:', error)
-      alert('Failed to remove item')
+      toast.error('Failed to remove item')
     } finally {
       setUpdating(null)
     }
@@ -132,10 +134,9 @@ export default function CartPage() {
   // 去结算
   const checkout = () => {
     if (items.length === 0) {
-      alert('购物车为空')
+      toast.error('购物车为空')
       return
     }
-    // TODO: 实现结算逻辑，创建订单
     router.push('/checkout')
   }
 

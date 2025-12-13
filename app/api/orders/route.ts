@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST - 创建订单（从购物车）
+// POST - 创建订单（从购物车或直接预订）
 export async function POST(req: NextRequest) {
   try {
     const token = req.cookies.get('token')?.value
@@ -70,61 +70,109 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    // 获取请求体（可选的 cart_item_ids 数组）
-    const body = await req.json().catch(() => ({}))
-    const { cart_item_ids } = body
+    // 获取请求体
+    const body = await req.json()
+    const { cart_item_ids, spot_id, ticket_id, visitDate, visitTime, visitors, contactName, contactPhone, contactEmail, remarks } = body
 
-    // 构建购物车查询条件
-    let cartQuery = `
-      SELECT
-        ci.id as cart_item_id,
-        ci.quantity,
-        t.id as ticket_id,
-        t.name as ticket_name,
-        t.price as ticket_price,
-        t.stock as ticket_stock,
-        t.status as ticket_status,
-        s.name as spot_name
-      FROM cart_items ci
-      LEFT JOIN tickets t ON ci.ticket_id = t.id
-      LEFT JOIN spots s ON t.spot_id = s.id
-      WHERE ci.user_id = ?
-    `
-    const cartParams: any[] = [decoded.userId]
+    // 判断是从购物车创建订单还是直接预订
+    let orderItems: any[] = []
 
-    // 如果指定了特定的购物车商品ID，只获取这些商品
-    if (cart_item_ids && Array.isArray(cart_item_ids) && cart_item_ids.length > 0) {
-      const placeholders = cart_item_ids.map(() => '?').join(',')
-      cartQuery += ` AND ci.id IN (${placeholders})`
-      cartParams.push(...cart_item_ids)
-    }
+    if (spot_id && ticket_id && visitors) {
+      // 直接预订模式
+      const ticket = dbGet(`
+        SELECT
+          t.id,
+          t.name as ticket_name,
+          t.price as ticket_price,
+          t.stock as ticket_stock,
+          t.status as ticket_status,
+          s.name as spot_name
+        FROM tickets t
+        LEFT JOIN spots s ON t.spot_id = s.id
+        WHERE t.id = ? AND t.spot_id = ? AND t.status = 'active'
+      `, [ticket_id, spot_id])
 
-    // 获取购物车商品
-    const cartItems = dbQuery(cartQuery, cartParams)
+      if (!ticket) {
+        return NextResponse.json({ error: '门票不存在或已下架' }, { status: 400 })
+      }
 
-    if (!cartItems || cartItems.length === 0) {
-      return NextResponse.json({ error: 'Cart is empty' }, { status: 400 })
-    }
-
-    // 验证库存
-    for (const item of cartItems) {
-      if (item.ticket_status !== 'active') {
+      if (ticket.ticket_stock < visitors) {
         return NextResponse.json({
-          error: `Ticket "${item.ticket_name}" is not available`
+          error: '库存不足',
+          available: ticket.ticket_stock
         }, { status: 400 })
       }
 
-      if (item.ticket_stock < item.quantity) {
-        return NextResponse.json({
-          error: `Insufficient stock for "${item.ticket_name}"`,
-          available: item.ticket_stock
-        }, { status: 400 })
+      orderItems.push({
+        ticket_id: ticket.id,
+        ticket_name: ticket.ticket_name,
+        spot_name: ticket.spot_name,
+        price: ticket.ticket_price,
+        quantity: visitors
+      })
+    } else {
+      // 购物车模式
+      // 构建购物车查询条件
+      let cartQuery = `
+        SELECT
+          ci.id as cart_item_id,
+          ci.quantity,
+          t.id as ticket_id,
+          t.name as ticket_name,
+          t.price as ticket_price,
+          t.stock as ticket_stock,
+          t.status as ticket_status,
+          s.name as spot_name
+        FROM cart_items ci
+        LEFT JOIN tickets t ON ci.ticket_id = t.id
+        LEFT JOIN spots s ON t.spot_id = s.id
+        WHERE ci.user_id = ?
+      `
+      const cartParams: any[] = [decoded.userId]
+
+      // 如果指定了特定的购物车商品ID，只获取这些商品
+      if (cart_item_ids && Array.isArray(cart_item_ids) && cart_item_ids.length > 0) {
+        const placeholders = cart_item_ids.map(() => '?').join(',')
+        cartQuery += ` AND ci.id IN (${placeholders})`
+        cartParams.push(...cart_item_ids)
+      }
+
+      // 获取购物车商品
+      const cartItems = dbQuery(cartQuery, cartParams)
+
+      if (!cartItems || cartItems.length === 0) {
+        return NextResponse.json({ error: 'Cart is empty' }, { status: 400 })
+      }
+
+      // 验证库存并添加到订单项
+      for (const item of cartItems) {
+        if (item.ticket_status !== 'active') {
+          return NextResponse.json({
+            error: `Ticket "${item.ticket_name}" is not available`
+          }, { status: 400 })
+        }
+
+        if (item.ticket_stock < item.quantity) {
+          return NextResponse.json({
+            error: `Insufficient stock for "${item.ticket_name}"`,
+            available: item.ticket_stock
+          }, { status: 400 })
+        }
+
+        orderItems.push({
+          ticket_id: item.ticket_id,
+          ticket_name: item.ticket_name,
+          spot_name: item.spot_name,
+          price: item.ticket_price,
+          quantity: item.quantity,
+          cart_item_id: item.cart_item_id
+        })
       }
     }
 
     // 计算总金额
-    const totalAmount = cartItems.reduce((sum: number, item: any) => {
-      return sum + (item.ticket_price * item.quantity)
+    const totalAmount = orderItems.reduce((sum: number, item: any) => {
+      return sum + (item.price * item.quantity)
     }, 0)
 
     // 生成订单号（格式：年月日+时分秒+6位随机数）
@@ -137,13 +185,19 @@ export async function POST(req: NextRequest) {
     // 创建订单
     const orderId = randomUUID()
 
+    // 如果是直接预订，保存额外的订单信息
+    let orderNote = ''
+    if (spot_id && ticket_id) {
+      orderNote = `访问日期: ${visitDate}, 访问时间: ${visitTime}, 联系人: ${contactName}, 电话: ${contactPhone}${contactEmail ? ', 邮箱: ' + contactEmail : ''}${remarks ? ', 备注: ' + remarks : ''}`
+    }
+
     dbRun(`
-      INSERT INTO orders (id, user_id, order_no, total_amount, status, created_at)
-      VALUES (?, ?, ?, ?, 'pending', datetime('now'))
-    `, [orderId, decoded.userId, orderNo, totalAmount])
+      INSERT INTO orders (id, user_id, order_no, total_amount, status, note, created_at)
+      VALUES (?, ?, ?, ?, 'pending', ?, datetime('now'))
+    `, [orderId, decoded.userId, orderNo, totalAmount, orderNote])
 
     // 创建订单项
-    for (const item of cartItems) {
+    for (const item of orderItems) {
       const orderItemId = randomUUID()
 
       dbRun(`
@@ -155,7 +209,7 @@ export async function POST(req: NextRequest) {
         item.ticket_id,
         item.ticket_name,
         item.spot_name,
-        item.ticket_price,
+        item.price,
         item.quantity
       ])
 
@@ -167,13 +221,15 @@ export async function POST(req: NextRequest) {
       `, [item.quantity, item.ticket_id])
     }
 
-    // 清空已结算的购物车商品
-    if (cart_item_ids && Array.isArray(cart_item_ids) && cart_item_ids.length > 0) {
-      const placeholders = cart_item_ids.map(() => '?').join(',')
-      dbRun(`DELETE FROM cart_items WHERE user_id = ? AND id IN (${placeholders})`, [decoded.userId, ...cart_item_ids])
-    } else {
-      // 如果没有指定商品ID，清空所有购物车商品
-      dbRun(`DELETE FROM cart_items WHERE user_id = ?`, [decoded.userId])
+    // 如果是购物车模式，清空已结算的购物车商品
+    if (!spot_id || !ticket_id) {
+      if (cart_item_ids && Array.isArray(cart_item_ids) && cart_item_ids.length > 0) {
+        const placeholders = cart_item_ids.map(() => '?').join(',')
+        dbRun(`DELETE FROM cart_items WHERE user_id = ? AND id IN (${placeholders})`, [decoded.userId, ...cart_item_ids])
+      } else {
+        // 如果没有指定商品ID，清空所有购物车商品
+        dbRun(`DELETE FROM cart_items WHERE user_id = ?`, [decoded.userId])
+      }
     }
 
     // 获取创建的订单详情

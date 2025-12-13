@@ -1,0 +1,539 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Search, Plus, Edit, Trash2, Star, MapPin, Phone } from "lucide-react"
+import { toast } from "sonner"
+import Image from 'next/image'
+
+interface Hotel {
+  id: string
+  name: string
+  description: string
+  location: string
+  address: string
+  rating: number
+  price_range: string
+  facilities: string[]
+  images: string[]
+  contact_phone: string
+  contact_email: string
+  status: 'active' | 'inactive'
+  created_at: string
+}
+
+export default function AdminHotelsPage() {
+  const [hotels, setHotels] = useState<Hotel[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [editingHotel, setEditingHotel] = useState<Hotel | null>(null)
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    location: '',
+    address: '',
+    rating: '5',
+    price_range: '',
+    facilities: [] as string[],
+    images: [] as string[],
+    contact_phone: '',
+    contact_email: '',
+    status: 'active' as 'active' | 'inactive'
+  })
+
+  const fetchHotels = async () => {
+    try {
+      const params = new URLSearchParams()
+      if (statusFilter !== 'all') params.append('status', statusFilter)
+
+      const res = await fetch(`/api/admin/hotels?${params}`)
+      if (!res.ok) throw new Error('Failed to fetch hotels')
+
+      const data = await res.json()
+      setHotels(data.hotels || [])
+    } catch (error) {
+      console.error('Error fetching hotels:', error)
+      toast.error('获取酒店列表失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchHotels()
+  }, [statusFilter])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    try {
+      const token = localStorage.getItem('token')
+      const url = editingHotel ? `/api/admin/hotels/${editingHotel.id}` : '/api/admin/hotels'
+      const method = editingHotel ? 'PATCH' : 'POST'
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          ...formData,
+          rating: parseFloat(formData.rating)
+        })
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || '操作失败')
+      }
+
+      toast.success(editingHotel ? '酒店更新成功' : '酒店创建成功')
+      setIsAddDialogOpen(false)
+      setEditingHotel(null)
+      setFormData({
+        name: '',
+        description: '',
+        location: '',
+        address: '',
+        rating: '5',
+        price_range: '',
+        facilities: [],
+        images: [],
+        contact_phone: '',
+        contact_email: '',
+        status: 'active'
+      })
+      fetchHotels()
+    } catch (error: any) {
+      toast.error(error.message || '操作失败')
+    }
+  }
+
+  const handleEdit = (hotel: Hotel) => {
+    setEditingHotel(hotel)
+    setFormData({
+      name: hotel.name,
+      description: hotel.description,
+      location: hotel.location,
+      address: hotel.address,
+      rating: hotel.rating.toString(),
+      price_range: hotel.price_range,
+      facilities: hotel.facilities || [],
+      images: hotel.images || [],
+      contact_phone: hotel.contact_phone,
+      contact_email: hotel.contact_email,
+      status: hotel.status
+    })
+    setIsAddDialogOpen(true)
+  }
+
+  const handleDelete = async (hotelId: string) => {
+    if (!confirm('确定要删除这个酒店吗？')) return
+
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch(`/api/admin/hotels/${hotelId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || '删除失败')
+      }
+
+      toast.success('酒店删除成功')
+      fetchHotels()
+    } catch (error: any) {
+      toast.error(error.message || '删除失败')
+    }
+  }
+
+  const handleAddFacility = () => {
+    setFormData({
+      ...formData,
+      facilities: [...formData.facilities, '']
+    })
+  }
+
+  const handleUpdateFacility = (index: number, value: string) => {
+    const newFacilities = [...formData.facilities]
+    newFacilities[index] = value
+    setFormData({
+      ...formData,
+      facilities: newFacilities
+    })
+  }
+
+  const handleRemoveFacility = (index: number) => {
+    setFormData({
+      ...formData,
+      facilities: formData.facilities.filter((_, i) => i !== index)
+    })
+  }
+
+  const filteredHotels = hotels.filter(hotel => {
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase()
+      return (
+        hotel.name.toLowerCase().includes(searchLower) ||
+        hotel.location.toLowerCase().includes(searchLower) ||
+        hotel.address.toLowerCase().includes(searchLower)
+      )
+    }
+    return true
+  })
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">酒店管理</h1>
+        <div className="text-center py-12">加载中...</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">酒店管理</h1>
+          <p className="text-muted-foreground">管理所有酒店信息</p>
+        </div>
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={() => setEditingHotel(null)}>
+              <Plus className="h-4 w-4 mr-2" />
+              添加酒店
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[525px]">
+            <DialogHeader>
+              <DialogTitle>{editingHotel ? '编辑酒店' : '添加新酒店'}</DialogTitle>
+              <DialogDescription>
+                {editingHotel ? '修改酒店信息' : '创建一个新的酒店'}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit}>
+              <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="name" className="text-right">
+                    酒店名称
+                  </Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="col-span-3"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-start gap-4">
+                  <Label htmlFor="description" className="text-right pt-2">
+                    描述
+                  </Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="col-span-3"
+                    rows={3}
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="location" className="text-right">
+                    所在城市
+                  </Label>
+                  <Input
+                    id="location"
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    className="col-span-3"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="address" className="text-right">
+                    详细地址
+                  </Label>
+                  <Input
+                    id="address"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="rating" className="text-right">
+                    评级
+                  </Label>
+                  <Select
+                    value={formData.rating}
+                    onValueChange={(value) => setFormData({ ...formData, rating: value })}
+                  >
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">五星</SelectItem>
+                      <SelectItem value="4.5">四星半</SelectItem>
+                      <SelectItem value="4">四星</SelectItem>
+                      <SelectItem value="3.5">三星半</SelectItem>
+                      <SelectItem value="3">三星</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="price_range" className="text-right">
+                    价格区间
+                  </Label>
+                  <Input
+                    id="price_range"
+                    value={formData.price_range}
+                    onChange={(e) => setFormData({ ...formData, price_range: e.target.value })}
+                    className="col-span-3"
+                    placeholder="例如：200-500"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="contact_phone" className="text-right">
+                    联系电话
+                  </Label>
+                  <Input
+                    id="contact_phone"
+                    value={formData.contact_phone}
+                    onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="contact_email" className="text-right">
+                    联系邮箱
+                  </Label>
+                  <Input
+                    id="contact_email"
+                    type="email"
+                    value={formData.contact_email}
+                    onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-start gap-4">
+                  <Label className="text-right pt-2">设施服务</Label>
+                  <div className="col-span-3 space-y-2">
+                    {formData.facilities.map((facility, index) => (
+                      <div key={index} className="flex gap-2">
+                        <Input
+                          value={facility}
+                          onChange={(e) => handleUpdateFacility(index, e.target.value)}
+                          placeholder="例如：免费WiFi、停车场、游泳池"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleRemoveFacility(index)}
+                        >
+                          删除
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleAddFacility}
+                    >
+                      添加设施
+                    </Button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 items-start gap-4">
+                  <Label htmlFor="images" className="text-right pt-2">
+                    图片链接
+                  </Label>
+                  <div className="col-span-3 space-y-2">
+                    {formData.images.map((img, index) => (
+                      <Input
+                        key={index}
+                        value={img}
+                        onChange={(e) => {
+                          const newImages = [...formData.images]
+                          newImages[index] = e.target.value
+                          setFormData({ ...formData, images: newImages })
+                        }}
+                        placeholder="图片URL"
+                      />
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setFormData({ ...formData, images: [...formData.images, ''] })}
+                    >
+                      添加图片
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit">
+                  {editingHotel ? '更新' : '创建'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* 筛选和搜索 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>筛选条件</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="搜索酒店名称或地址"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="状态筛选" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部状态</SelectItem>
+                <SelectItem value="active">上架</SelectItem>
+                <SelectItem value="inactive">下架</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 酒店列表 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>酒店列表 ({filteredHotels.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>酒店</TableHead>
+                <TableHead>位置</TableHead>
+                <TableHead>评级</TableHead>
+                <TableHead>价格区间</TableHead>
+                <TableHead>联系方式</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead>操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredHotels.map((hotel) => (
+                <TableRow key={hotel.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      {hotel.images?.[0] && (
+                        <div className="relative w-16 h-16">
+                          <Image
+                            src={hotel.images[0]}
+                            alt={hotel.name}
+                            fill
+                            className="object-cover rounded"
+                          />
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-medium">{hotel.name}</p>
+                        <div className="flex gap-1 mt-1">
+                          {hotel.facilities?.slice(0, 2).map((facility, index) => (
+                            <Badge key={index} variant="outline" className="text-xs">
+                              {facility}
+                            </Badge>
+                          ))}
+                          {(hotel.facilities?.length || 0) > 2 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{(hotel.facilities?.length || 0) - 2}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm">
+                      <p>{hotel.location}</p>
+                      <p className="text-muted-foreground">{hotel.address}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                      <span>{hotel.rating}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm">{hotel.price_range || '-'}</span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm">
+                      {hotel.contact_phone && (
+                        <div className="flex items-center gap-1">
+                          <Phone className="h-3 w-3" />
+                          <span>{hotel.contact_phone}</span>
+                        </div>
+                      )}
+                      {hotel.contact_email && (
+                        <div className="text-muted-foreground text-xs truncate max-w-[150px]">
+                          {hotel.contact_email}
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={hotel.status === 'active' ? 'default' : 'secondary'}>
+                      {hotel.status === 'active' ? '上架' : '下架'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => handleEdit(hotel)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(hotel.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          {filteredHotels.length === 0 && (
+            <div className="text-center py-12 text-muted-foreground">
+              暂无酒店数据
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { ShoppingBag, CreditCard, ArrowLeft } from "lucide-react"
+import { toast } from "sonner"
 
 interface CartItem {
   id: string
@@ -55,7 +56,7 @@ export default function CheckoutPage() {
 
   const handleSubmitOrder = async () => {
     if (items.length === 0) {
-      alert('购物车为空')
+      toast.error('购物车为空')
       return
     }
 
@@ -67,16 +68,16 @@ export default function CheckoutPage() {
 
       if (!res.ok) {
         const error = await res.json()
-        alert(error.error || '创建订单失败')
+        toast.error(error.error || '创建订单失败')
         return
       }
 
       const data = await res.json()
-      alert('订单创建成功！')
-      router.push(`/orders/${data.order_id}`)
+      toast.success('订单创建成功！')
+      router.push(`/orders/${data.data.order.id}`)
     } catch (error) {
       console.error('Error creating order:', error)
-      alert('创建订单失败，请重试')
+      toast.error('创建订单失败，请重试')
     } finally {
       setSubmitting(false)
     }
