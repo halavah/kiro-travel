@@ -12,21 +12,21 @@ export async function GET(request: NextRequest) {
     const location = searchParams.get('location') || ''
     const activityType = searchParams.get('activity_type') || ''
 
-    let whereClause = "WHERE status = 'active'"
+    let whereClause = "WHERE a.status = 'active'"
     const params: any[] = []
 
     if (search) {
-      whereClause += ' AND (name LIKE ? OR description LIKE ?)'
+      whereClause += ' AND (a.name LIKE ? OR a.description LIKE ?)'
       params.push(`%${search}%`, `%${search}%`)
     }
 
     if (location) {
-      whereClause += ' AND location LIKE ?'
+      whereClause += ' AND a.location LIKE ?'
       params.push(`%${location}%`)
     }
 
     if (activityType) {
-      whereClause += ' AND activity_type = ?'
+      whereClause += ' AND a.activity_type = ?'
       params.push(activityType)
     }
 

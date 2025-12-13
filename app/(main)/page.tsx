@@ -8,7 +8,7 @@ import { dbQuery } from "@/lib/db-utils"
 
 export default async function HomePage() {
   // 获取推荐景点
-  const recommendedSpots = dbQuery<Spot>(`
+  const recommendedSpotsRaw = dbQuery(`
     SELECT s.*, c.name as category_name
     FROM spots s
     LEFT JOIN spot_categories c ON s.category_id = c.id
@@ -17,13 +17,26 @@ export default async function HomePage() {
     LIMIT 4
   `)
 
+  // 解析景点 JSON 字段
+  const recommendedSpots: Spot[] = recommendedSpotsRaw.map((spot: any) => ({
+    ...spot,
+    images: spot.images ? JSON.parse(spot.images) : [],
+    category: spot.category_name ? { name: spot.category_name } : null,
+  }))
+
   // 获取活动
-  const activities = dbQuery<Activity>(`
+  const activitiesRaw = dbQuery(`
     SELECT * FROM activities
     WHERE status = 'active'
     ORDER BY created_at DESC
     LIMIT 3
   `)
+
+  // 解析活动 JSON 字段
+  const activities: Activity[] = activitiesRaw.map((activity: any) => ({
+    ...activity,
+    images: activity.images ? JSON.parse(activity.images) : [],
+  }))
 
   // 获取新闻
   const news = dbQuery<News>(`

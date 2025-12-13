@@ -14,7 +14,7 @@ export async function GET(
     const limit = parseInt(searchParams.get('limit') || '10')
 
     // 检查景点是否存在
-    const spot = dbGet('SELECT id FROM spots WHERE id = ? AND status = 1', [id])
+    const spot = dbGet('SELECT id FROM spots WHERE id = ? AND status = \'active\'', [id])
     if (!spot) {
       return NextResponse.json(
         { success: false, error: '景点不存在' },
@@ -26,10 +26,10 @@ export async function GET(
     const comments = dbQuery(`
       SELECT
         c.*,
-        u.nickname,
-        u.avatar
+        p.username as nickname,
+        p.avatar_url as avatar
       FROM spot_comments c
-      LEFT JOIN users u ON c.user_id = u.id
+      LEFT JOIN profiles p ON c.user_id = p.id
       WHERE c.spot_id = ?
       ORDER BY c.created_at DESC
       LIMIT ? OFFSET ?
@@ -93,7 +93,7 @@ export async function POST(
     }
 
     // 检查景点是否存在
-    const spot = dbGet('SELECT id FROM spots WHERE id = ? AND status = 1', [id])
+    const spot = dbGet('SELECT id FROM spots WHERE id = ? AND status = \'active\'', [id])
     if (!spot) {
       return NextResponse.json(
         { success: false, error: '景点不存在' },
@@ -124,10 +124,10 @@ export async function POST(
     const comment = dbGet(`
       SELECT
         c.*,
-        u.nickname,
-        u.avatar
+        p.username as nickname,
+        p.avatar_url as avatar
       FROM spot_comments c
-      LEFT JOIN users u ON c.user_id = u.id
+      LEFT JOIN profiles p ON c.user_id = p.id
       WHERE c.id = ?
     `, [lastInsertRowid])
 

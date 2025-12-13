@@ -19,8 +19,8 @@ export async function GET(req: NextRequest) {
 
     // 获取用户资料
     const user = dbGet(`
-      SELECT id, email, nickname, phone, avatar, role, created_at
-      FROM users
+      SELECT id, email, username as nickname, phone, avatar_url as avatar, role, created_at
+      FROM profiles
       WHERE id = ?
     `, [decoded.userId])
 
@@ -56,15 +56,15 @@ export async function PATCH(req: NextRequest) {
 
     // 更新用户资料
     dbRun(`
-      UPDATE users
-      SET nickname = ?, phone = ?, avatar = ?
+      UPDATE profiles
+      SET username = ?, phone = ?, avatar_url = ?, updated_at = datetime('now')
       WHERE id = ?
     `, [nickname || null, phone || null, avatar || null, decoded.userId])
 
     // 获取更新后的用户资料
     const user = dbGet(`
-      SELECT id, email, nickname, phone, avatar, role, created_at
-      FROM users
+      SELECT id, email, username as nickname, phone, avatar_url as avatar, role, created_at
+      FROM profiles
       WHERE id = ?
     `, [decoded.userId])
 

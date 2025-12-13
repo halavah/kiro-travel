@@ -26,7 +26,7 @@ export async function GET(
       LEFT JOIN spot_likes sl ON s.id = sl.spot_id
       LEFT JOIN spot_favorites sf ON s.id = sf.spot_id
       LEFT JOIN spot_comments sco ON s.id = sco.spot_id
-      WHERE s.id = ? AND s.status = 1
+      WHERE s.id = ? AND s.status = 'active'
       GROUP BY s.id
     `, [id])
 
@@ -57,7 +57,7 @@ export async function GET(
         COUNT(ab.id) as booked_count
       FROM activities a
       LEFT JOIN activity_bookings ab ON a.id = ab.activity_id
-      WHERE a.spot_id = ? AND a.status = 1
+      WHERE a.spot_id = ? AND a.status = 'active'
       GROUP BY a.id
       ORDER BY a.start_date
       LIMIT 5
@@ -220,7 +220,7 @@ export async function DELETE(
     }
 
     // 软删除：更新状态
-    dbRun('UPDATE spots SET status = 0 WHERE id = ?', [id])
+    dbRun('UPDATE spots SET status = \'inactive\' WHERE id = ?', [id])
 
     return NextResponse.json({
       success: true,

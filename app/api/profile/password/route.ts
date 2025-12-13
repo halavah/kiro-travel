@@ -28,8 +28,8 @@ export async function POST(req: NextRequest) {
 
     // 更新密码
     dbRun(`
-      UPDATE users
-      SET password = ?
+      UPDATE profiles
+      SET password_hash = ?, updated_at = datetime('now')
       WHERE id = ?
     `, [hashedPassword, decoded.userId])
 

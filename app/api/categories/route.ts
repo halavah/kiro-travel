@@ -10,7 +10,7 @@ export async function GET() {
         c.*,
         COUNT(s.id) as spot_count
       FROM spot_categories c
-      LEFT JOIN spots s ON c.id = s.category_id AND s.status = 1
+      LEFT JOIN spots s ON c.id = s.category_id AND s.status = 'active'
       GROUP BY c.id
       ORDER BY c.sort_order, c.name
     `)

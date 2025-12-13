@@ -22,11 +22,6 @@ interface TicketsListProps {
 }
 
 export function TicketsList({ tickets, totalCount }: TicketsListProps) {
-  // #region agent log
-  // 记录组件接收到的数据
-  fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'tickets-list.tsx:24', message: '组件接收到的门票数据', data: { ticketsCount: tickets.length, ticketsSample: tickets.slice(0, 2).map(t => ({ id: t.id, name: t.name, hasSpot: !!t.spot, spotId: t.spot?.id })) }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'A,B,C,D' }) }).catch(() => { });
-  // #endregion
-
   const router = useRouter()
   const [loadingId, setLoadingId] = useState<string | null>(null)
 
@@ -85,11 +80,6 @@ export function TicketsList({ tickets, totalCount }: TicketsListProps) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {tickets.map((ticket) => {
-          // #region agent log
-          // 记录每个门票的spot状态
-          fetch('http://127.0.0.1:7244/ingest/3d36902f-c49a-4d79-9c89-7a13eac53de2', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'tickets-list.tsx:82', message: '门票渲染时检查spot', data: { ticketId: ticket.id, ticketName: ticket.name, hasSpot: !!ticket.spot, spot: ticket.spot }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'A,B,C,D' }) }).catch(() => { });
-          // #endregion
-
           return (
             <Card key={ticket.id} className="group overflow-hidden hover:shadow-lg transition-all duration-300">
               <Link href={`/spots/${ticket.spot.id}`}>

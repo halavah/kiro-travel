@@ -20,7 +20,7 @@ export async function POST(
     const id = params.id
 
     // 检查景点是否存在
-    const spot = dbGet('SELECT id FROM spots WHERE id = ? AND status = 1', [id])
+    const spot = dbGet('SELECT id FROM spots WHERE id = ? AND status = \'active\'', [id])
     if (!spot) {
       return NextResponse.json(
         { success: false, error: '景点不存在' },

@@ -4,7 +4,6 @@ import { validateAuth, checkRole } from '@/lib/auth'
 
 // GET /api/spots - 获取景点列表
 export async function GET(request: NextRequest) {
-  console.log('✅ Spots API GET called!')
   try {
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
@@ -12,8 +11,6 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const category = searchParams.get('category') || ''
     const isRecommended = searchParams.get('is_recommended') === 'true'
-
-    console.log('Query params:', { page, limit, search, category, isRecommended })
 
     let whereClause = "WHERE s.status = 'active'"
     const params: any[] = []
@@ -54,9 +51,16 @@ export async function GET(request: NextRequest) {
 
     const result = paginate(sql, page, limit, params)
 
+    // 解析 images JSON 字段
+    const spotsWithParsedImages = result.data.map((spot: any) => ({
+      ...spot,
+      images: spot.images ? JSON.parse(spot.images) : [],
+    }))
+
     return NextResponse.json({
       success: true,
-      ...result
+      data: spotsWithParsedImages,
+      pagination: result.pagination
     })
   } catch (error) {
     console.error('Error fetching spots:', error)
