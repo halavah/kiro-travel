@@ -532,7 +532,7 @@ export default function AdminActivitiesPage() {
             <div className="grid gap-2">
               <Label>活动图片</Label>
               <MultiImageUpload
-                images={formData.images}
+                value={formData.images}
                 onChange={(images) => setFormData({ ...formData, images })}
               />
             </div>
