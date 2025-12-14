@@ -13,7 +13,17 @@ const dbPath = join(dataDir, 'database.sqlite')
 export const db = new Database(dbPath)
 
 // 配置数据库
-db.pragma('journal_mode = WAL') // 启用 WAL 模式，提高并发性能
+try {
+  // 尝试启用 WAL 模式,如果失败则使用默认模式
+  db.pragma('journal_mode = WAL')
+} catch (error) {
+  console.warn('⚠️  无法启用 WAL 模式,使用默认 journal 模式:', error)
+  try {
+    db.pragma('journal_mode = DELETE')
+  } catch (e) {
+    console.warn('⚠️  使用当前 journal 模式')
+  }
+}
 db.pragma('foreign_keys = ON')  // 启用外键约束
 
 // 数据库初始化函数

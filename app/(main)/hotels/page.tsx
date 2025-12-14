@@ -46,9 +46,11 @@ export default async function HotelsPage({
     `
     SELECT
       h.*,
-      COUNT(DISTINCT hr.id) as room_count
+      COUNT(DISTINCT hr.id) as room_count,
+      MIN(hr.price_per_night) as price_min,
+      MAX(hr.price_per_night) as price_max
     FROM hotels h
-    LEFT JOIN hotel_rooms hr ON h.id = hr.hotel_id AND hr.status = 'active'
+    LEFT JOIN hotel_rooms hr ON h.id = hr.hotel_id AND hr.status = 'available'
     WHERE ${whereClause}
     GROUP BY h.id
     ORDER BY h.created_at DESC
