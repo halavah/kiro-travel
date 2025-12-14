@@ -5,7 +5,7 @@ import { validateAuth } from '@/lib/auth'
 // POST /api/spots/[id]/like - 点赞/取消点赞
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user } = await validateAuth(request)
@@ -17,7 +17,7 @@ export async function POST(
       )
     }
 
-    const id = params.id
+    const { id } = await params
 
     // 检查景点是否存在
     const spot = dbGet('SELECT id FROM spots WHERE id = ? AND status = \'active\'', [id])

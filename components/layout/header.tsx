@@ -62,66 +62,55 @@ export function Header() {
 
   useEffect(() => {
     const fetchUserData = async () => {
-      const token = localStorage.getItem('token')
-
-      if (!token) {
-        setUser(null)
-        setCartCount(0)
-        return
-      }
-
       try {
-        // 获取用户信息
+        // 获取用户信息 - 使用 cookie 认证
         const userRes = await fetch('/api/auth/me', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+          credentials: 'include' // 自动发送 cookie
         })
 
         if (userRes.ok) {
           const userData = await userRes.json()
           setUser(userData.data?.user || userData.user)
 
-          // 获取购物车数量（仅对非导游用户）
+          // 获取购物车数量（仅对非���游用户）
           const userRole = userData.data?.user?.role || userData.user?.role
           if (userRole !== 'guide') {
             const cartRes = await fetch('/api/cart', {
-              headers: {
-                'Authorization': `Bearer ${token}`
-              }
+              credentials: 'include' // 自动发送 cookie
             })
 
             if (cartRes.ok) {
               const cartData = await cartRes.json()
-              setCartCount(cartData.data?.length || 0)
+              setCartCount(cartData.items?.length || 0)
             }
           }
         } else {
-          // Token 无效，清除
-          localStorage.removeItem('token')
+          // 未认证
           setUser(null)
           setCartCount(0)
         }
       } catch (error) {
         console.error('获取用户数据失败:', error)
+        setUser(null)
+        setCartCount(0)
       }
     }
 
     fetchUserData()
-
-    // 监听存储变化（用于跨标签页同步）
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'token') {
-        fetchUserData()
-      }
-    }
-
-    window.addEventListener('storage', handleStorageChange)
-    return () => window.removeEventListener('storage', handleStorageChange)
   }, [])
 
-  const handleLogout = () => {
-    localStorage.removeItem('token')
+  const handleLogout = async () => {
+    try {
+      // 调用登出 API 清除 cookie
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      })
+    } catch (error) {
+      console.error('登出失败:', error)
+    }
+
+    // 清除客户端状态
     setUser(null)
     setCartCount(0)
     router.push("/")

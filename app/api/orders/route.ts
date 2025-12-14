@@ -72,7 +72,13 @@ export async function POST(req: NextRequest) {
     }
 
     // 获取请求体
-    const body = await req.json()
+    let body = {}
+    try {
+      body = await req.json()
+    } catch (e) {
+      // 如果没有请求体或请求体为空，使用空对象
+      body = {}
+    }
     const { cart_item_ids, spot_id, ticket_id, visitDate, visitTime, visitors, contactName, contactPhone, contactEmail, remarks } = body
 
     // 判断是从购物车创建订单还是直接预订

@@ -32,31 +32,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // 从 localStorage 读取 token
-    const storedToken = localStorage.getItem('token')
-    if (storedToken) {
-      setToken(storedToken)
-      fetchCurrentUser(storedToken)
-    } else {
-      setLoading(false)
-    }
+    // 从 cookie 检查用户登录状态
+    fetchCurrentUser()
   }, [])
 
-  const fetchCurrentUser = async (authToken: string) => {
+  const fetchCurrentUser = async () => {
     try {
       const response = await fetch('/api/auth/me', {
-        headers: {
-          Authorization: `Bearer ${authToken}`
-        }
+        credentials: 'include' // 自动发送 cookie
       })
 
       if (response.ok) {
         const data = await response.json()
         if (data.success) {
           setUser(data.data.user)
+          // token 存储在 httpOnly cookie 中，我们不需要在客户端保存
+          setToken('cookie-based') // 标记为 cookie 认证
         }
       } else {
-        localStorage.removeItem('token')
+        setUser(null)
         setToken(null)
       }
     } catch (error) {
@@ -73,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: {
           'Content-Type': 'application/json'
         },
+        credentials: 'include', // 自动发送和接收 cookie
         body: JSON.stringify({ email, password })
       })
 
@@ -80,8 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data.success) {
         setUser(data.data.user)
-        setToken(data.data.token)
-        localStorage.setItem('token', data.data.token)
+        setToken('cookie-based') // 标记为 cookie 认证
+        // Cookie 已由服务器设置，不需要 localStorage
         return { success: true }
       } else {
         return { success: false, error: data.error }
@@ -104,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: {
           'Content-Type': 'application/json'
         },
+        credentials: 'include', // 自动发送和接收 cookie
         body: JSON.stringify(registerData)
       })
 
@@ -111,8 +107,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data.success) {
         setUser(data.data.user)
-        setToken(data.data.token)
-        localStorage.setItem('token', data.data.token)
+        setToken('cookie-based') // 标记为 cookie 认证
+        // Cookie 已由服务器设置，不需要 localStorage
         return { success: true }
       } else {
         return { success: false, error: data.error }
@@ -123,10 +119,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      // 调用登出 API 清除 cookie
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      })
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
+
     setUser(null)
     setToken(null)
-    localStorage.removeItem('token')
   }
 
   return (

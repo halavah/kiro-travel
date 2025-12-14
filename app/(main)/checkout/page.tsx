@@ -29,10 +29,12 @@ export default function CheckoutPage() {
 
   const fetchCart = async () => {
     try {
-      const res = await fetch('/api/cart')
+      const res = await fetch('/api/cart', {
+        credentials: 'include' // 自动发送 cookie
+      })
 
       if (res.status === 401) {
-        router.push('/login')
+        router.push('/auth/sign-in')
         return
       }
 
@@ -63,7 +65,12 @@ export default function CheckoutPage() {
     setSubmitting(true)
     try {
       const res = await fetch('/api/orders', {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include', // 自动发送 cookie
+        body: JSON.stringify({}) // 发送空对象，API 会从购物车获取所有商品
       })
 
       if (!res.ok) {
