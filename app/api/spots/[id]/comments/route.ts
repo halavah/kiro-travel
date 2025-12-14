@@ -5,10 +5,10 @@ import { validateAuth } from '@/lib/auth'
 // GET /api/spots/[id]/comments - 获取景点评论
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id
+    const { id } = await params
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
@@ -63,7 +63,7 @@ export async function GET(
 // POST /api/spots/[id]/comments - 添加评论
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user } = await validateAuth(request)
@@ -75,7 +75,7 @@ export async function POST(
       )
     }
 
-    const id = params.id
+    const { id } = await params
     const { content, rating } = await request.json()
 
     if (!content || !rating) {

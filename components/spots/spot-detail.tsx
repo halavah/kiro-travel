@@ -43,24 +43,22 @@ export function SpotDetail({ spot, tickets, isLoggedIn }: SpotDetailProps) {
 
   const handleLike = async () => {
     if (!isLoggedIn) {
-      router.push("/login")
+      router.push("/auth/sign-in")
       return
     }
 
     setIsLoading("like")
-    const token = localStorage.getItem('token')
-    if (!token) {
-      router.push("/login")
-      return
-    }
 
     try {
       const response = await fetch(`/api/spots/${spot.id}/like`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        credentials: 'include' // 自动发送 cookie
       })
+
+      if (response.status === 401) {
+        router.push("/auth/sign-in")
+        return
+      }
 
       if (!response.ok) throw new Error('操作失败')
 
@@ -79,24 +77,22 @@ export function SpotDetail({ spot, tickets, isLoggedIn }: SpotDetailProps) {
 
   const handleFavorite = async () => {
     if (!isLoggedIn) {
-      router.push("/login")
+      router.push("/auth/sign-in")
       return
     }
 
     setIsLoading("favorite")
-    const token = localStorage.getItem('token')
-    if (!token) {
-      router.push("/login")
-      return
-    }
 
     try {
       const response = await fetch(`/api/spots/${spot.id}/favorite`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        credentials: 'include' // 自动发送 cookie
       })
+
+      if (response.status === 401) {
+        router.push("/auth/sign-in")
+        return
+      }
 
       if (!response.ok) throw new Error('操作失败')
 
@@ -114,31 +110,32 @@ export function SpotDetail({ spot, tickets, isLoggedIn }: SpotDetailProps) {
 
   const handleAddToCart = async (ticketId: string) => {
     if (!isLoggedIn) {
-      router.push("/login")
+      router.push("/auth/sign-in")
       return
     }
 
     setIsLoading(ticketId)
-    const token = localStorage.getItem('token')
-    if (!token) {
-      router.push("/login")
-      return
-    }
 
     try {
       const response = await fetch('/api/cart', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
+        credentials: 'include', // 自动发送 cookie
         body: JSON.stringify({
           ticket_id: ticketId,
           quantity: 1
         })
       })
 
-      if (!response.ok) throw new Error('添加失败')
+      if (!response.ok) {
+        if (response.status === 401) {
+          router.push("/auth/sign-in")
+          return
+        }
+        throw new Error('添加失败')
+      }
 
       toast.success("已添加到购物车")
       router.refresh()
