@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import { dbQuery, dbGet, dbRun } from '@/lib/db-utils'
-import { randomUUID } from 'crypto'
 
 // GET - 获取用户收藏列表
 export async function GET(req: NextRequest) {
@@ -95,16 +94,21 @@ export async function POST(req: NextRequest) {
     }
 
     // 添加收藏
-    const favoriteId = randomUUID()
     dbRun(`
-      INSERT INTO spot_favorites (id, spot_id, user_id)
-      VALUES (?, ?, ?)
-    `, [favoriteId, spot_id, decoded.userId])
+      INSERT INTO spot_favorites (spot_id, user_id)
+      VALUES (?, ?)
+    `, [spot_id, decoded.userId])
+
+    // 获取刚插入的 ID
+    const newFavorite = dbGet(`
+      SELECT id FROM spot_favorites
+      WHERE spot_id = ? AND user_id = ?
+    `, [spot_id, decoded.userId])
 
     return NextResponse.json({
       success: true,
       message: 'Added to favorites',
-      favorite_id: favoriteId
+      favorite_id: newFavorite.id
     }, { status: 201 })
 
   } catch (error) {

@@ -41,8 +41,11 @@ export default async function SpotDetailPage({
     WHERE spot_id = ? AND status = 'active'
   `, [id])
 
-  // 获取点赞数（spot_likes表不存在，暂时返回0）
-  const likesCount = 0
+  // 获取点赞数
+  const { likeCount } = dbGet(`
+    SELECT COUNT(*) as likeCount FROM spot_likes WHERE spot_id = ?
+  `, [id]) || { likeCount: 0 }
+  const likesCount = likeCount || 0
 
   // 获取当前用户
   const cookieStore = await cookies()
@@ -58,21 +61,21 @@ export default async function SpotDetailPage({
   let isLiked = false
   let isFavorited = false
 
-  // spot_likes 和 spot_favorites 表不存在，暂时设为 false
-  // if (user) {
-  //   const like = dbGet(`
-  //     SELECT id FROM spot_likes
-  //     WHERE spot_id = ? AND user_id = ?
-  //   `, [id, user.id])
+  // 检查用户是否点赞和收藏
+  if (user) {
+    const like = dbGet(`
+      SELECT id FROM spot_likes
+      WHERE spot_id = ? AND user_id = ?
+    `, [id, user.id])
 
-  //   const favorite = dbGet(`
-  //     SELECT id FROM spot_favorites
-  //     WHERE spot_id = ? AND user_id = ?
-  //   `, [id, user.id])
+    const favorite = dbGet(`
+      SELECT id FROM spot_favorites
+      WHERE spot_id = ? AND user_id = ?
+    `, [id, user.id])
 
-  //   isLiked = !!like
-  //   isFavorited = !!favorite
-  // }
+    isLiked = !!like
+    isFavorited = !!favorite
+  }
 
   const spotWithMeta = {
     ...spot,
