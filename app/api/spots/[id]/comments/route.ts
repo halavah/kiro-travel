@@ -26,7 +26,7 @@ export async function GET(
     const comments = dbQuery(`
       SELECT
         c.*,
-        p.username as nickname,
+        p.full_name as nickname,
         p.avatar_url as avatar
       FROM spot_comments c
       LEFT JOIN profiles p ON c.user_id = p.id
@@ -124,7 +124,7 @@ export async function POST(
     const comment = dbGet(`
       SELECT
         c.*,
-        p.username as nickname,
+        p.full_name as nickname,
         p.avatar_url as avatar
       FROM spot_comments c
       LEFT JOIN profiles p ON c.user_id = p.id

@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
         s.description,
         s.images,
         s.rating,
-        s.price_range,
+        s.price,
         c.name as category_name
       FROM spot_favorites sf
       LEFT JOIN spots s ON sf.spot_id = s.id
