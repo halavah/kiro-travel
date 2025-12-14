@@ -110,7 +110,7 @@ const createTables = () => {
       max_participants INTEGER,
       price DECIMAL(10, 2) DEFAULT 0,
       images TEXT, -- JSON array
-      status TEXT DEFAULT 'active' CHECK (status IN ('active', 'cancelled')),
+      status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
@@ -938,9 +938,10 @@ const generateCartData = () => {
   console.log('✓ 生成新闻分类数据');
 
   // 11. 生成新闻数据
+  const baseTimestamp = Date.now();
   const newsData = [
     {
-      id: `news_${Date.now()}_1`,
+      id: `news_${baseTimestamp}_1`,
       title: '2024春节旅游高峰即将到来，热门景点提前预订',
       summary: '春节假期临近，全国各大旅游景点迎来预订高峰。建议游客提前规划行程，预订门票和住宿。',
       content: `<p>随着2024年春节假期的临近，全国各大旅游景点即将迎来客流高峰。据统计，今年春节期间，预计有超过3亿人次选择出游。</p>
@@ -954,7 +955,7 @@ const generateCartData = () => {
       published_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
     },
     {
-      id: `news_${Date.now()}_2`,
+      id: `news_${baseTimestamp}_2`,
       title: '九寨沟春季限时开放，错过再等一年',
       summary: '九寨沟景区宣布春季限时开放政策，每日限流8000人。游客需提前在线预约购票。',
       content: `<p>四川九寨沟景区管理局宣布，今年春季将实施限时开放政策，以更好地保护生态环境。</p>
@@ -968,7 +969,7 @@ const generateCartData = () => {
       published_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
     },
     {
-      id: `news_${Date.now()}_3`,
+      id: `news_${baseTimestamp}_3`,
       title: '西湖游船推出夜游项目，体验不一样的江南水乡',
       summary: '杭州西湖风景区推出全新夜游项目，游客可乘坐画舫欣赏西湖夜景，感受江南水乡的独特魅力。',
       content: `<p>为了丰富游客的游览体验，杭州西湖风景区近日推出了全新的夜游项目。</p>
@@ -982,7 +983,7 @@ const generateCartData = () => {
       published_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
     },
     {
-      id: `news_${Date.now()}_4`,
+      id: `news_${baseTimestamp}_4`,
       title: '黄山云海奇观再现，摄影爱好者纷纷前往',
       summary: '近日黄山出现壮观云海景象，吸引众多摄影爱好者和游客前往观赏。气象部门预测未来一周仍有机会看到云海。',
       content: `<p>受冷空气影响，黄山风景区近日出现了壮观的云海景象。云雾在山峰间翻涌，如梦如幻，美不胜收。</p>
@@ -996,7 +997,7 @@ const generateCartData = () => {
       published_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
     },
     {
-      id: `news_${Date.now()}_5`,
+      id: `news_${baseTimestamp}_5`,
       title: '桂林漓江竹筏游全新升级，增设讲解服务',
       summary: '桂林漓江景区对竹筏游项目进行升级改造，增加了专业讲解服务和安全设施，提升游客体验。',
       content: `<p>桂林漓江风景区近期完成了竹筏游项目的升级改造，为游客提供更优质的服务体验。</p>
@@ -1010,7 +1011,7 @@ const generateCartData = () => {
       published_at: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString()
     },
     {
-      id: `news_${Date.now()}_6`,
+      id: `news_${baseTimestamp}_6`,
       title: '丽江古城推出"慢游"路线，深度体验纳西文化',
       summary: '丽江古��推出全新的"慢游"主题路线，让游客放慢脚步，深度体验纳西族的传统文化和生活方式。',
       content: `<p>为了让游客更好地感受丽江古城的文化底蕴，景区推出了"慢游丽江"主题路线。</p>
@@ -1024,7 +1025,7 @@ const generateCartData = () => {
       published_at: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString()
     },
     {
-      id: `news_${Date.now()}_7`,
+      id: `news_${baseTimestamp}_7`,
       title: '户外露营成新趋势，这些装备你准备好了吗？',
       summary: '随着露营旅游的兴起，越来越多的人选择走进大自然。本文为您推荐户外露营必备装备清单。',
       content: `<p>近年来，户外露营成为了新兴的旅游方式，受到年轻人的热烈追捧。</p>
@@ -1038,7 +1039,7 @@ const generateCartData = () => {
       published_at: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString()
     },
     {
-      id: `news_${Date.now()}_8`,
+      id: `news_${baseTimestamp}_8`,
       title: '登山爱好者必看：春季登山注意事项',
       summary: '春季是登山的好时节，但也要注意安全。本文为您总结春季登山的注意事项和安全提示。',
       content: `<p>春季气候宜人，是登山的绝佳时节。但春季天气变化较大，登山时需要特别注意以下几点：</p>
