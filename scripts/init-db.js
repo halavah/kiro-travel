@@ -275,8 +275,7 @@ const generateTestData = async () => {
       latitude: 39.9163,
       longitude: 116.3972,
       images: [
-        'https://images.unsplash.com/photo-1608037521244-f1c6c7635194?w=800',
-        'https://images.unsplash.com/photo-1519904981063-b0cf448d479e?w=800'
+        '/assets/images/spots/gugong.jpg'
       ]
     },
     {
@@ -286,8 +285,7 @@ const generateTestData = async () => {
       latitude: 40.3598,
       longitude: 116.0200,
       images: [
-        'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?w=800',
-        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800'
+        '/assets/images/spots/changcheng.jpg'
       ]
     },
     {
@@ -297,8 +295,7 @@ const generateTestData = async () => {
       latitude: 30.2420,
       longitude: 120.1467,
       images: [
-        'https://images.unsplash.com/photo-1563462064290-7c2ab4eb39ab?w=800',
-        'https://images.unsplash.com/photo-1560453107-9cc2503d0a63?w=800'
+        '/assets/images/spots/xihu.jpg'
       ]
     },
     {
@@ -308,19 +305,47 @@ const generateTestData = async () => {
       latitude: 30.1371,
       longitude: 118.1719,
       images: [
-        'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
-        'https://images.unsplash.com/photo-1519904981063-b0cf448d479e?w=800'
+        '/assets/images/spots/huangshan.jpg'
       ]
     },
     {
-      name: '泰山',
-      description: '世界文化与自然双重遗产，世界地质公园，全国重点文物保护单位，国家AAAAA级旅游景区。',
-      location: '山东省泰安市泰山区',
-      latitude: 36.2551,
-      longitude: 117.1017,
+      name: '九寨沟',
+      description: '世界自然遗产，国家AAAAA级旅游景区，以多彩的湖泊、瀑布和雪山闻名。',
+      location: '四川省阿坝州九寨沟县',
+      latitude: 33.2600,
+      longitude: 103.9170,
       images: [
-        'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=800',
-        'https://images.unsplash.com/photo-1596426085963-1a1a6b206793?w=800'
+        '/assets/images/spots/jiuzhaigou.jpg'
+      ]
+    },
+    {
+      name: '桂林山水',
+      description: '桂林山水甲天下，以喀斯特地貌和漓江风光著称。',
+      location: '广西壮族自治区桂林市',
+      latitude: 25.2740,
+      longitude: 110.2900,
+      images: [
+        '/assets/images/spots/guilin.jpg'
+      ]
+    },
+    {
+      name: '丽江古城',
+      description: '世界文化遗产，纳西族古城，保存完好的少数民族古城。',
+      location: '云南省丽江市古城区',
+      latitude: 26.8550,
+      longitude: 100.2270,
+      images: [
+        '/assets/images/spots/lijiang.jpg'
+      ]
+    },
+    {
+      name: '上海外滩',
+      description: '上海的标志性景点，黄浦江畔的万国建筑博览群。',
+      location: '上海市黄浦区中山东一路',
+      latitude: 31.2400,
+      longitude: 121.4900,
+      images: [
+        '/assets/images/spots/shanghai.jpg'
       ]
     }
   ];
@@ -360,10 +385,10 @@ const generateTestData = async () => {
     // 长城门票
     { spot_id: 2, name: '成人票', description: '18周岁以上成年人', price: 40, stock: 2000 },
     { spot_id: 2, name: '学生票', description: '全日制大学本科及以下学历学生', price: 20, stock: 1000 },
-    { spot_id: 2, name: '缆车往返票', description: '包含缆车上下', price: 140, stock: 800 },
+    { spot_id: 2, name: '缆车往返票', description: '包含缆车上���', price: 140, stock: 800 },
 
     // 西湖门票
-    { spot_id: 3, name: '游船票', description: '西湖游船船票', price: 55, stock: 600 },
+    { spot_id: 3, name: '游��票', description: '西湖游船船票', price: 55, stock: 600 },
     { spot_id: 3, name: '三潭印月岛门票', description: '包含上岛船票', price: 55, stock: 800 },
 
     // 黄山门票
@@ -371,10 +396,20 @@ const generateTestData = async () => {
     { spot_id: 4, name: '淡季门票', description: '12月1日至次年2月底', price: 150, stock: 1000 },
     { spot_id: 4, name: '索道票', description: '云谷索道单程', price: 80, stock: 2000 },
 
-    // 泰山门票
-    { spot_id: 5, name: '旺季门票', description: '3月1日至11月30日', price: 125, stock: 3000 },
-    { spot_id: 5, name: '淡季门票', description: '12月1日至次年2月底', price: 100, stock: 2000 },
-    { spot_id: 5, name: '旅游专线车票', description: '天外村旅游专线往返', price: 30, stock: 5000 }
+    // 九寨沟门票
+    { spot_id: 5, name: '旺季门票', description: '4月1日至11月15日', price: 169, stock: 2000 },
+    { spot_id: 5, name: '淡季门票', description: '11月16日至次年3月31日', price: 80, stock: 1500 },
+
+    // 桂林山水门票
+    { spot_id: 6, name: '漓江竹筏票', description: '漓江精华段竹筏游', price: 118, stock: 800 },
+    { spot_id: 6, name: '两江四湖夜游', description: '桂林市区水上游览', price: 220, stock: 500 },
+
+    // 丽江古城门票
+    { spot_id: 7, name: '古城维护费', description: '丽江古城维护费', price: 50, stock: 10000 },
+
+    // 上海外滩门票
+    { spot_id: 8, name: '东方明珠观光票', description: '含观光层+全透明观光廊', price: 180, stock: 3000 },
+    { spot_id: 8, name: '黄浦江游船票', description: '游船观赏外滩夜景', price: 100, stock: 1000 }
   ];
 
   const ticketStmt = db.prepare(`
@@ -406,43 +441,43 @@ const generateTestData = async () => {
       max_participants: 20,
       price: 299,
       images: [
-        'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=800'
-      ]
-    },
-    {
-      title: '历史文化讲座',
-      description: '深入了解故宫600年的历史',
-      location: '故宫博物院',
-      start_time: '2025-04-20 14:00:00',
-      end_time: '2025-04-20 16:00:00',
-      max_participants: 50,
-      price: 0,
-      images: [
-        'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800'
+        '/assets/images/activities/photography.jpg'
       ]
     },
     {
       title: '登山挑战赛',
-      description: '挑战自我，征服泰山',
-      location: '泰山风景区',
+      description: '挑战自我，征服高峰',
+      location: '��山风景区',
       start_time: '2025-05-01 06:00:00',
       end_time: '2025-05-01 18:00:00',
       max_participants: 100,
       price: 99,
       images: [
-        'https://images.unsplash.com/photo-1464822759844-d150baec0494?w=800'
+        '/assets/images/activities/mountain.jpg'
       ]
     },
     {
-      title: '美食文化节',
-      description: '品尝各地特色美食',
-      location: '北京奥林匹克公园',
-      start_time: '2025-05-10 10:00:00',
-      end_time: '2025-05-12 20:00:00',
-      max_participants: 500,
-      price: 50,
+      title: '户外野营体验',
+      description: '亲近自然，体验野外露营的乐趣',
+      location: '九寨沟景区',
+      start_time: '2025-06-10 14:00:00',
+      end_time: '2025-06-11 10:00:00',
+      max_participants: 30,
+      price: 388,
       images: [
-        'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800'
+        '/assets/images/activities/camping.jpg'
+      ]
+    },
+    {
+      title: '徒步探险之旅',
+      description: '专业向导带队，探索自然秘境',
+      location: '桂林山水',
+      start_time: '2025-07-20 08:00:00',
+      end_time: '2025-07-20 17:00:00',
+      max_participants: 25,
+      price: 199,
+      images: [
+        '/assets/images/activities/hiking.jpg'
       ]
     }
   ];
@@ -476,7 +511,7 @@ const generateTestData = async () => {
       phone: '010-58128888',
       rating: 4.8,
       images: [
-        'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800'
+        '/assets/images/hotels/hotel1.jpg'
       ],
       amenities: ['免费WiFi', '健身房', '游泳池', '商务中心', '停车场']
     },
@@ -488,7 +523,7 @@ const generateTestData = async () => {
       phone: '0571-87977988',
       rating: 4.9,
       images: [
-        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800'
+        '/assets/images/hotels/hotel2.jpg'
       ],
       amenities: ['免费WiFi', '湖景房', '餐厅', '会议室', 'SPA']
     },
@@ -500,7 +535,7 @@ const generateTestData = async () => {
       phone: '0559-5588888',
       rating: 4.5,
       images: [
-        'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800'
+        '/assets/images/hotels/hotel3.jpg'
       ],
       amenities: ['温泉', '免费WiFi', '健身房', '餐厅', '接送服务']
     }
@@ -589,15 +624,15 @@ const generateOrderData = () => {
     {
       user_id: 5, // 李四
       items: [
-        { ticket_id: 7, quantity: 1 }, // 黄山旺季门票 x1
-        { ticket_id: 9, quantity: 1 }, // 黄山索道票 x1
+        { ticket_id: 10, quantity: 1 }, // 黄山旺季门票 x1
+        { ticket_id: 12, quantity: 1 }, // 黄山索道票 x1
       ],
       status: 'pending'
     },
     {
       user_id: 6, // 王五
       items: [
-        { ticket_id: 10, quantity: 3 }, // 泰山旺季门票 x3
+        { ticket_id: 13, quantity: 3 }, // 九寨沟旺季门票 x3
       ],
       status: 'completed',
       paid_at: '2025-01-10 14:30:00'
@@ -606,7 +641,7 @@ const generateOrderData = () => {
       user_id: 7, // 赵六
       items: [
         { ticket_id: 2, quantity: 1 }, // 故宫学生票 x1
-        { ticket_id: 6, quantity: 2 }, // 长城缆车往返票 x2
+        { ticket_id: 7, quantity: 2 }, // 长城缆车往返票 x2
       ],
       status: 'cancelled'
     },

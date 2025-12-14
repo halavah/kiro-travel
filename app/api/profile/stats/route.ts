@@ -25,29 +25,14 @@ export async function GET(req: NextRequest) {
     `, [decoded.userId])
     const orders = ordersResult[0]?.count || 0
 
-    // 获取酒店预订数量
-    const bookingsResult = dbQuery(`
-      SELECT COUNT(*) as count
-      FROM hotel_bookings
-      WHERE user_id = ?
-    `, [decoded.userId])
-    const bookings = bookingsResult[0]?.count || 0
+    // 酒店预订数量（hotel_bookings表不存在，暂时返回0）
+    const bookings = 0
 
-    // 获取收藏数量
-    const favoritesResult = dbQuery(`
-      SELECT COUNT(*) as count
-      FROM spot_favorites
-      WHERE user_id = ?
-    `, [decoded.userId])
-    const favorites = favoritesResult[0]?.count || 0
+    // 收藏数量（spot_favorites表不存在，暂时返回0）
+    const favorites = 0
 
-    // 获取评论数量
-    const commentsResult = dbQuery(`
-      SELECT COUNT(*) as count
-      FROM spot_comments
-      WHERE user_id = ?
-    `, [decoded.userId])
-    const comments = commentsResult[0]?.count || 0
+    // 评论数量（spot_comments表不存在，暂时返回0）
+    const comments = 0
 
     return NextResponse.json({
       data: {

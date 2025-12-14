@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const params: any[] = []
 
     if (search) {
-      whereClause += ' AND (a.name LIKE ? OR a.description LIKE ?)'
+      whereClause += ' AND (a.title LIKE ? OR a.description LIKE ?)'
       params.push(`%${search}%`, `%${search}%`)
     }
 
@@ -35,10 +35,10 @@ export async function GET(request: NextRequest) {
         a.*,
         COUNT(DISTINCT ap.id) as participant_count
       FROM activities a
-      LEFT JOIN activity_participants ap ON a.id = ap.activity_id AND ap.status = 'confirmed'
+      LEFT JOIN activity_participants ap ON a.id = ap.activity_id AND ap.status = 'registered'
       ${whereClause}
       GROUP BY a.id
-      ORDER BY a.start_date DESC
+      ORDER BY a.start_time DESC
     `
 
     const result = paginate(sql, page, limit, params)
@@ -47,8 +47,8 @@ export async function GET(request: NextRequest) {
     const activitiesWithParsedData = result.data.map((activity: any) => ({
       ...activity,
       images: activity.images ? JSON.parse(activity.images) : [],
-      available_slots: activity.max_participants - (activity.current_participants || 0),
-      is_full: activity.current_participants >= activity.max_participants
+      available_slots: activity.max_participants ? activity.max_participants - (activity.participant_count || 0) : null,
+      is_full: activity.max_participants ? activity.participant_count >= activity.max_participants : false
     }))
 
     return NextResponse.json({
@@ -78,21 +78,21 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const {
-      name,
+      title,
       description,
       location,
       images,
       activity_type,
-      start_date,
-      end_date,
+      start_time,
+      end_time,
       price,
       max_participants
     } = body
 
     // 验证必填字段
-    if (!name || !location || !start_date || !end_date) {
+    if (!title || !location || !start_time || !end_time) {
       return NextResponse.json(
-        { success: false, error: '活动名称、位置、开始和结束日期为必填项' },
+        { success: false, error: '活动名称、位置、开始和结束时间为必填项' },
         { status: 400 }
       )
     }
@@ -102,15 +102,14 @@ export async function POST(request: NextRequest) {
 
     const sql = `
       INSERT INTO activities (
-        id, name, description, location, images, activity_type,
-        start_date, end_date, price, max_participants,
-        current_participants, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'active')
+        id, title, description, location, images, activity_type,
+        start_time, end_time, price, max_participants, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
     `
 
     dbRun(sql, [
-      id, name, description, location, imagesJson, activity_type,
-      start_date, end_date, price, max_participants
+      id, title, description, location, imagesJson, activity_type,
+      start_time, end_time, price, max_participants
     ])
 
     const activity = dbGet('SELECT * FROM activities WHERE id = ?', [id])

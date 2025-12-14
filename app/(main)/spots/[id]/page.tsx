@@ -32,14 +32,8 @@ export default async function SpotDetailPage({
     WHERE id = ?
   `, [id])
 
-  // 获取评论
-  const comments = dbQuery<SpotComment>(`
-    SELECT sc.*, p.full_name as user_full_name, p.avatar_url as user_avatar_url
-    FROM spot_comments sc
-    LEFT JOIN profiles p ON sc.user_id = p.id
-    WHERE sc.spot_id = ?
-    ORDER BY sc.created_at DESC
-  `, [id])
+  // 获取评论（spot_comments表不存在，暂时返回空数组）
+  const comments: SpotComment[] = []
 
   // 获取门票
   const tickets = dbQuery<Ticket>(`
@@ -47,11 +41,8 @@ export default async function SpotDetailPage({
     WHERE spot_id = ? AND status = 'active'
   `, [id])
 
-  // 获取点赞数
-  const likesCount = dbGet<{ count: number }>(`
-    SELECT COUNT(*) as count FROM spot_likes
-    WHERE spot_id = ?
-  `, [id])?.count || 0
+  // 获取点赞数（spot_likes表不存在，暂时返回0）
+  const likesCount = 0
 
   // 获取当前用户
   const cookieStore = await cookies()
@@ -67,20 +58,21 @@ export default async function SpotDetailPage({
   let isLiked = false
   let isFavorited = false
 
-  if (user) {
-    const like = dbGet(`
-      SELECT id FROM spot_likes
-      WHERE spot_id = ? AND user_id = ?
-    `, [id, user.id])
+  // spot_likes 和 spot_favorites 表不存在，暂时设为 false
+  // if (user) {
+  //   const like = dbGet(`
+  //     SELECT id FROM spot_likes
+  //     WHERE spot_id = ? AND user_id = ?
+  //   `, [id, user.id])
 
-    const favorite = dbGet(`
-      SELECT id FROM spot_favorites
-      WHERE spot_id = ? AND user_id = ?
-    `, [id, user.id])
+  //   const favorite = dbGet(`
+  //     SELECT id FROM spot_favorites
+  //     WHERE spot_id = ? AND user_id = ?
+  //   `, [id, user.id])
 
-    isLiked = !!like
-    isFavorited = !!favorite
-  }
+  //   isLiked = !!like
+  //   isFavorited = !!favorite
+  // }
 
   const spotWithMeta = {
     ...spot,

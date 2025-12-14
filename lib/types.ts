@@ -143,16 +143,19 @@ export interface HotelBooking {
 
 export interface Activity {
   id: string
-  name: string
+  title: string
   description: string | null
   location: string | null
   images: string[] | null
   activity_type: string | null
-  start_date: string | null
-  end_date: string | null
+  start_time: string
+  end_time: string
   price: number | null
   max_participants: number | null
-  is_active: boolean
+  status: "active" | "cancelled"
+  participant_count?: number
+  available_slots?: number | null
+  is_full?: boolean
   created_at: string
   updated_at: string
 }

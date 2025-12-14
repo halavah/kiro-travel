@@ -86,9 +86,9 @@ export function FeaturedActivities() {
                     <img
                       src={
                         activity.images?.[0] ||
-                        `/placeholder.svg?height=200&width=300&query=${encodeURIComponent(activity.name + " travel activity")}`
+                        `/placeholder.svg?height=200&width=300&query=${encodeURIComponent(activity.title + " travel activity")}`
                       }
-                      alt={activity.name}
+                      alt={activity.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     {activity.activity_type && (
@@ -99,7 +99,7 @@ export function FeaturedActivities() {
                   </div>
                   <CardContent className="p-4">
                     <h3 className="font-semibold mb-2 group-hover:text-primary transition-colors line-clamp-1">
-                      {activity.name}
+                      {activity.title}
                     </h3>
                     <div className="space-y-2 text-sm text-muted-foreground">
                       {activity.location && (
@@ -108,10 +108,10 @@ export function FeaturedActivities() {
                           <span className="line-clamp-1">{activity.location}</span>
                         </div>
                       )}
-                      {activity.start_date && (
+                      {activity.start_time && (
                         <div className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
-                          <span>{new Date(activity.start_date).toLocaleDateString("zh-CN")}</span>
+                          <span>{new Date(activity.start_time).toLocaleDateString("zh-CN")}</span>
                         </div>
                       )}
                       {activity.max_participants && (

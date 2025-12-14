@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
     // 获取用户资料
     const user = dbGet(`
-      SELECT id, email, username as nickname, phone, avatar_url as avatar, role, created_at
+      SELECT id, email, full_name as nickname, avatar_url as avatar, role, created_at
       FROM profiles
       WHERE id = ?
     `, [decoded.userId])
@@ -53,18 +53,18 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    const { nickname, phone, avatar } = await req.json()
+    const { nickname, avatar } = await req.json()
 
     // 更新用户资料
     dbRun(`
       UPDATE profiles
-      SET username = ?, phone = ?, avatar_url = ?, updated_at = datetime('now')
+      SET full_name = ?, avatar_url = ?, updated_at = datetime('now')
       WHERE id = ?
-    `, [nickname || null, phone || null, avatar || null, decoded.userId])
+    `, [nickname || null, avatar || null, decoded.userId])
 
     // 获取更新后的用户资料
     const user = dbGet(`
-      SELECT id, email, username as nickname, phone, avatar_url as avatar, role, created_at
+      SELECT id, email, full_name as nickname, avatar_url as avatar, role, created_at
       FROM profiles
       WHERE id = ?
     `, [decoded.userId])
