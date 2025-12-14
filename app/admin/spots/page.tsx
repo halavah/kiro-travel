@@ -14,19 +14,19 @@ import { Search, Plus, Edit, Trash2, Star, Eye, MapPin } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
 import Image from 'next/image'
-import ImageUpload from '@/components/admin/ImageUpload'
+import MultiImageUpload from '@/components/admin/MultiImageUpload'
 
 interface Spot {
   id: string
   name: string
   description: string
   location: string
-  address: string
   price: number
   rating: number
   is_recommended: number
   view_count: number
   status: string
+  category_id: string
   category_name: string
   images: string[]
   created_at: string
@@ -44,7 +44,6 @@ export default function AdminSpotsPage() {
     name: '',
     description: '',
     location: '',
-    address: '',
     price: '',
     category_id: '',
     is_recommended: false,
@@ -127,7 +126,6 @@ export default function AdminSpotsPage() {
         name: '',
         description: '',
         location: '',
-        address: '',
         price: '',
         category_id: '',
         is_recommended: false,
@@ -146,9 +144,8 @@ export default function AdminSpotsPage() {
       name: spot.name,
       description: spot.description,
       location: spot.location,
-      address: spot.address,
       price: spot.price.toString(),
-      category_id: spot.category_name,
+      category_id: spot.category_id,
       is_recommended: spot.is_recommended === 1,
       images: spot.images && spot.images.length > 0 ? spot.images : [''],
       status: spot.status
@@ -209,8 +206,7 @@ export default function AdminSpotsPage() {
       const searchLower = searchTerm.toLowerCase()
       return (
         spot.name.toLowerCase().includes(searchLower) ||
-        spot.location.toLowerCase().includes(searchLower) ||
-        spot.address.toLowerCase().includes(searchLower)
+        spot.location.toLowerCase().includes(searchLower)
       )
     }
     return true
@@ -240,7 +236,6 @@ export default function AdminSpotsPage() {
                 name: '',
                 description: '',
                 location: '',
-                address: '',
                 price: '',
                 category_id: '',
                 is_recommended: false,
@@ -277,21 +272,23 @@ export default function AdminSpotsPage() {
                   <Label htmlFor="category_id" className="text-right">
                     分类
                   </Label>
-                  <Select
-                    value={formData.category_id}
-                    onValueChange={(value) => setFormData({ ...formData, category_id: value })}
-                  >
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="选择分类" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="col-span-3">
+                    <Select
+                      value={formData.category_id}
+                      onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="选择分类" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="grid grid-cols-4 items-start gap-4">
                   <Label htmlFor="description" className="text-right pt-2">
@@ -318,17 +315,6 @@ export default function AdminSpotsPage() {
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="address" className="text-right">
-                    详细地址
-                  </Label>
-                  <Input
-                    id="address"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="price" className="text-right">
                     参考价格
                   </Label>
@@ -346,40 +332,12 @@ export default function AdminSpotsPage() {
                   <Label className="text-right pt-2">
                     图片
                   </Label>
-                  <div className="col-span-3 space-y-4">
-                    {formData.images.map((img, index) => (
-                      <div key={index} className="space-y-2">
-                        <ImageUpload
-                          label={`图片 ${index + 1}`}
-                          value={img}
-                          onChange={(url) => {
-                            const newImages = [...formData.images]
-                            newImages[index] = url
-                            setFormData({ ...formData, images: newImages })
-                          }}
-                        />
-                        {formData.images.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              const newImages = formData.images.filter((_, i) => i !== index)
-                              setFormData({ ...formData, images: newImages })
-                            }}
-                          >
-                            移除此图片
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setFormData({ ...formData, images: [...formData.images, ''] })}
-                    >
-                      添加图片
-                    </Button>
+                  <div className="col-span-3">
+                    <MultiImageUpload
+                      value={formData.images}
+                      onChange={(urls) => setFormData({ ...formData, images: urls })}
+                      maxImages={5}
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
@@ -495,7 +453,6 @@ export default function AdminSpotsPage() {
                   <TableCell>
                     <div className="text-sm">
                       <p>{spot.location}</p>
-                      <p className="text-muted-foreground">{spot.address}</p>
                     </div>
                   </TableCell>
                   <TableCell>{spot.category_name}</TableCell>

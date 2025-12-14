@@ -61,6 +61,7 @@ export async function GET(req: NextRequest) {
         s.status,
         s.images,
         s.created_at,
+        s.category_id,
         sc.name as category_name
       FROM spots s
       LEFT JOIN spot_categories sc ON s.category_id = sc.id
@@ -106,7 +107,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { name, description, location, address, price, category_id, is_recommended, images } = body
+    const { name, description, location, price, category_id, is_recommended, images } = body
 
     // 验证必填字段
     if (!name || !location || !price || !category_id) {
@@ -133,11 +134,11 @@ export async function POST(req: NextRequest) {
     const spotId = randomUUID()
     const { lastInsertRowid } = dbRun(`
       INSERT INTO spots (
-        id, name, description, location, address, price,
+        id, name, description, location, price,
         category_id, is_recommended, images, status, created_by, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, datetime('now'))
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, datetime('now'))
     `, [
-      spotId, name, description || null, location, address || null, price,
+      spotId, name, description || null, location, price,
       categoryId, is_recommended ? 1 : 0,
       JSON.stringify(images || []), decoded.userId
     ])

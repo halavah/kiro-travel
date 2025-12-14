@@ -31,7 +31,7 @@ export async function PATCH(
 
     const { id } = await params
     const body = await req.json()
-    const { name, description, location, address, price, category_id, is_recommended, images, status } = body
+    const { name, description, location, price, category_id, is_recommended, images, status } = body
 
     // 检查景点是否存在
     const spot = dbGet(`
@@ -73,10 +73,6 @@ export async function PATCH(
     if (location !== undefined) {
       updateFields.push('location = ?')
       updateValues.push(location)
-    }
-    if (address !== undefined) {
-      updateFields.push('address = ?')
-      updateValues.push(address)
     }
     if (price !== undefined) {
       updateFields.push('price = ?')

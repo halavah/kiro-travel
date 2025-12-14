@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Search, Plus, Edit, Trash2, Star, MapPin, Phone } from "lucide-react"
 import { toast } from "sonner"
 import Image from 'next/image'
-import ImageUpload from '@/components/admin/ImageUpload'
+import MultiImageUpload from '@/components/admin/MultiImageUpload'
 
 interface Hotel {
   id: string
@@ -22,11 +22,9 @@ interface Hotel {
   location: string
   address: string
   rating: number
-  price_range: string
-  facilities: string[]
+  amenities: string[]
   images: string[]
-  contact_phone: string
-  contact_email: string
+  phone: string
   status: 'active' | 'inactive'
   created_at: string
 }
@@ -44,11 +42,9 @@ export default function AdminHotelsPage() {
     location: '',
     address: '',
     rating: '5',
-    price_range: '',
-    facilities: [] as string[],
+    amenities: [] as string[],
     images: [] as string[],
-    contact_phone: '',
-    contact_email: '',
+    phone: '',
     status: 'active' as 'active' | 'inactive'
   })
 
@@ -113,11 +109,9 @@ export default function AdminHotelsPage() {
         location: '',
         address: '',
         rating: '5',
-        price_range: '',
-        facilities: [],
+        amenities: [],
         images: [],
-        contact_phone: '',
-        contact_email: '',
+        phone: '',
         status: 'active'
       })
       fetchHotels()
@@ -134,11 +128,9 @@ export default function AdminHotelsPage() {
       location: hotel.location,
       address: hotel.address,
       rating: hotel.rating.toString(),
-      price_range: hotel.price_range,
-      facilities: hotel.facilities || [],
+      amenities: hotel.amenities || [],
       images: hotel.images && hotel.images.length > 0 ? hotel.images : [''],
-      contact_phone: hotel.contact_phone,
-      contact_email: hotel.contact_email,
+      phone: hotel.phone,
       status: hotel.status
     })
     setIsAddDialogOpen(true)
@@ -171,23 +163,23 @@ export default function AdminHotelsPage() {
   const handleAddFacility = () => {
     setFormData({
       ...formData,
-      facilities: [...formData.facilities, '']
+      amenities: [...formData.amenities, '']
     })
   }
 
   const handleUpdateFacility = (index: number, value: string) => {
-    const newFacilities = [...formData.facilities]
+    const newFacilities = [...formData.amenities]
     newFacilities[index] = value
     setFormData({
       ...formData,
-      facilities: newFacilities
+      amenities: newFacilities
     })
   }
 
   const handleRemoveFacility = (index: number) => {
     setFormData({
       ...formData,
-      facilities: formData.facilities.filter((_, i) => i !== index)
+      amenities: formData.amenities.filter((_, i) => i !== index)
     })
   }
 
@@ -229,11 +221,9 @@ export default function AdminHotelsPage() {
                 location: '',
                 address: '',
                 rating: '5',
-                price_range: '',
-                facilities: [],
+                amenities: [],
                 images: [''],
-                contact_phone: '',
-                contact_email: '',
+                phone: '',
                 status: 'active'
               })
             }}>
@@ -301,61 +291,39 @@ export default function AdminHotelsPage() {
                   <Label htmlFor="rating" className="text-right">
                     评级
                   </Label>
-                  <Select
-                    value={formData.rating}
-                    onValueChange={(value) => setFormData({ ...formData, rating: value })}
-                  >
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="5">五星</SelectItem>
-                      <SelectItem value="4.5">四星半</SelectItem>
-                      <SelectItem value="4">四星</SelectItem>
-                      <SelectItem value="3.5">三星半</SelectItem>
-                      <SelectItem value="3">三星</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="col-span-3">
+                    <Select
+                      value={formData.rating}
+                      onValueChange={(value) => setFormData({ ...formData, rating: value })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">五星</SelectItem>
+                        <SelectItem value="4.5">四星半</SelectItem>
+                        <SelectItem value="4">四星</SelectItem>
+                        <SelectItem value="3.5">三星半</SelectItem>
+                        <SelectItem value="3">三星</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="price_range" className="text-right">
-                    价格区间
-                  </Label>
-                  <Input
-                    id="price_range"
-                    value={formData.price_range}
-                    onChange={(e) => setFormData({ ...formData, price_range: e.target.value })}
-                    className="col-span-3"
-                    placeholder="例如：200-500"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="contact_phone" className="text-right">
+                  <Label htmlFor="phone" className="text-right">
                     联系电话
                   </Label>
                   <Input
-                    id="contact_phone"
-                    value={formData.contact_phone}
-                    onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="contact_email" className="text-right">
-                    联系邮箱
-                  </Label>
-                  <Input
-                    id="contact_email"
-                    type="email"
-                    value={formData.contact_email}
-                    onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
+                    id="phone"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="col-span-3"
                   />
                 </div>
                 <div className="grid grid-cols-4 items-start gap-4">
                   <Label className="text-right pt-2">设施服务</Label>
                   <div className="col-span-3 space-y-2">
-                    {formData.facilities.map((facility, index) => (
+                    {formData.amenities.map((facility, index) => (
                       <div key={index} className="flex gap-2">
                         <Input
                           value={facility}
@@ -384,40 +352,12 @@ export default function AdminHotelsPage() {
                   <Label className="text-right pt-2">
                     图片
                   </Label>
-                  <div className="col-span-3 space-y-4">
-                    {formData.images.map((img, index) => (
-                      <div key={index} className="space-y-2">
-                        <ImageUpload
-                          label={`图片 ${index + 1}`}
-                          value={img}
-                          onChange={(url) => {
-                            const newImages = [...formData.images]
-                            newImages[index] = url
-                            setFormData({ ...formData, images: newImages })
-                          }}
-                        />
-                        {formData.images.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              const newImages = formData.images.filter((_, i) => i !== index)
-                              setFormData({ ...formData, images: newImages })
-                            }}
-                          >
-                            移除此图片
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setFormData({ ...formData, images: [...formData.images, ''] })}
-                    >
-                      添加图片
-                    </Button>
+                  <div className="col-span-3">
+                    <MultiImageUpload
+                      value={formData.images}
+                      onChange={(urls) => setFormData({ ...formData, images: urls })}
+                      maxImages={5}
+                    />
                   </div>
                 </div>
               </div>
@@ -475,7 +415,6 @@ export default function AdminHotelsPage() {
                 <TableHead>酒店</TableHead>
                 <TableHead>位置</TableHead>
                 <TableHead>评级</TableHead>
-                <TableHead>价格区间</TableHead>
                 <TableHead>联系方式</TableHead>
                 <TableHead>状态</TableHead>
                 <TableHead>操作</TableHead>
@@ -499,14 +438,14 @@ export default function AdminHotelsPage() {
                       <div>
                         <p className="font-medium">{hotel.name}</p>
                         <div className="flex gap-1 mt-1">
-                          {hotel.facilities?.slice(0, 2).map((facility, index) => (
+                          {hotel.amenities?.slice(0, 2).map((facility, index) => (
                             <Badge key={index} variant="outline" className="text-xs">
                               {facility}
                             </Badge>
                           ))}
-                          {(hotel.facilities?.length || 0) > 2 && (
+                          {(hotel.amenities?.length || 0) > 2 && (
                             <Badge variant="outline" className="text-xs">
-                              +{(hotel.facilities?.length || 0) - 2}
+                              +{(hotel.amenities?.length || 0) - 2}
                             </Badge>
                           )}
                         </div>
@@ -526,19 +465,11 @@ export default function AdminHotelsPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm">{hotel.price_range || '-'}</span>
-                  </TableCell>
-                  <TableCell>
                     <div className="text-sm">
-                      {hotel.contact_phone && (
+                      {hotel.phone && (
                         <div className="flex items-center gap-1">
                           <Phone className="h-3 w-3" />
-                          <span>{hotel.contact_phone}</span>
-                        </div>
-                      )}
-                      {hotel.contact_email && (
-                        <div className="text-muted-foreground text-xs truncate max-w-[150px]">
-                          {hotel.contact_email}
+                          <span>{hotel.phone}</span>
                         </div>
                       )}
                     </div>

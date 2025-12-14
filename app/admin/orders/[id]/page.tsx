@@ -57,7 +57,12 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
     if (!orderId) return
 
     try {
-      const res = await fetch(`/api/admin/orders/${orderId}`)
+      const token = localStorage.getItem('token')
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
 
       if (res.status === 401 || res.status === 403) {
         router.push('/admin')

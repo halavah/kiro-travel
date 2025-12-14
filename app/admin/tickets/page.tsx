@@ -237,21 +237,23 @@ export default function AdminTicketsPage() {
                   <Label htmlFor="spot_id" className="text-right">
                     所属景点
                   </Label>
-                  <Select
-                    value={formData.spot_id}
-                    onValueChange={(value) => setFormData({ ...formData, spot_id: value })}
-                  >
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="选择景点" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {spots.map((spot) => (
-                        <SelectItem key={spot.id} value={spot.id}>
-                          {spot.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="col-span-3">
+                    <Select
+                      value={formData.spot_id}
+                      onValueChange={(value) => setFormData({ ...formData, spot_id: value })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="选择景点" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {spots.map((spot) => (
+                          <SelectItem key={spot.id} value={spot.id}>
+                            {spot.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="description" className="text-right">
@@ -320,18 +322,20 @@ export default function AdminTicketsPage() {
                   <Label htmlFor="status" className="text-right">
                     状态
                   </Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value: 'active' | 'inactive') => setFormData({ ...formData, status: value })}
-                  >
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">上架</SelectItem>
-                      <SelectItem value="inactive">下架</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="col-span-3">
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value: 'active' | 'inactive') => setFormData({ ...formData, status: value })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">上架</SelectItem>
+                        <SelectItem value="inactive">下架</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
               <DialogFooter>
