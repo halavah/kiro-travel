@@ -6,8 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, Clock, CheckCircle2, XCircle, Package, Mail, Phone } from "lucide-react"
 import Link from "next/link"
+import { toast } from 'sonner'
 
 interface OrderItem {
   id: string
@@ -96,6 +98,32 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
       minute: '2-digit',
       second: '2-digit'
     })
+  }
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (!orderId) return
+
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: newStatus })
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to update order status')
+      }
+
+      toast.success('订单状态已更新')
+      fetchOrder() // 重新获取订单信息
+    } catch (error) {
+      console.error('Error updating order status:', error)
+      toast.error('更新订单状态失败')
+    }
   }
 
   if (loading) {
@@ -242,6 +270,26 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
               <div className="flex justify-between text-lg font-bold">
                 <span>订单总额</span>
                 <span className="text-primary">¥{order.total_amount.toFixed(2)}</span>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h3 className="font-semibold mb-3">修改订单状态</h3>
+                <Select value={order.status} onValueChange={handleStatusChange}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">待支付</SelectItem>
+                    <SelectItem value="paid">已支付</SelectItem>
+                    <SelectItem value="completed">已完成</SelectItem>
+                    <SelectItem value="cancelled">已取消</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-2">
+                  选择新的订单状态来更新订单
+                </p>
               </div>
             </CardContent>
           </Card>
