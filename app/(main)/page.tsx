@@ -12,7 +12,7 @@ export default async function HomePage() {
     SELECT s.*, c.name as category_name
     FROM spots s
     LEFT JOIN spot_categories c ON s.category_id = c.id
-    WHERE s.is_recommended = 1
+    WHERE s.is_recommended = 1 AND s.status = 'active'
     ORDER BY s.created_at DESC
     LIMIT 4
   `)

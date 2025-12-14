@@ -15,14 +15,12 @@ export async function GET(
       SELECT
         s.*,
         sc.name as category_name,
-        u.full_name as created_by_name,
         COUNT(DISTINCT sl.id) as like_count,
         COUNT(DISTINCT sf.id) as favorite_count,
         IFNULL(AVG(sco.rating), 0) as average_rating,
         COUNT(DISTINCT sco.id) as comment_count
       FROM spots s
       LEFT JOIN spot_categories sc ON s.category_id = sc.id
-      LEFT JOIN profiles u ON s.created_by = u.id
       LEFT JOIN spot_likes sl ON s.id = sl.spot_id
       LEFT JOIN spot_favorites sf ON s.id = sf.spot_id
       LEFT JOIN spot_comments sco ON s.id = sco.spot_id
@@ -108,8 +106,8 @@ export async function PUT(
       )
     }
 
-    // 检查权限（管理员或创建者）
-    if (user.role !== 'admin' && spot.created_by !== user.id) {
+    // 检查权限（仅管理员可以修改）
+    if (user.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: '权限不足' },
         { status: 403 }
@@ -211,8 +209,8 @@ export async function DELETE(
       )
     }
 
-    // 检查权限（管理员或创建者）
-    if (user.role !== 'admin' && spot.created_by !== user.id) {
+    // 检查权限（仅管理员可以修改）
+    if (user.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: '权限不足' },
         { status: 403 }

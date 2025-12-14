@@ -105,14 +105,15 @@ export async function GET(req: NextRequest) {
       SELECT
         s.name,
         COUNT(DISTINCT o.id) as orders,
-        COALESCE(SUM(o.total_amount), 0) as revenue,
+        COALESCE(SUM(oi.price * oi.quantity), 0) as revenue,
         s.rating
       FROM spots s
-      LEFT JOIN tickets t ON s.id = t.spot_id
-      LEFT JOIN order_items oi ON t.id = oi.ticket_id
-      LEFT JOIN orders o ON oi.order_id = o.id
+      INNER JOIN tickets t ON s.id = t.spot_id
+      INNER JOIN order_items oi ON t.id = oi.ticket_id
+      INNER JOIN orders o ON oi.order_id = o.id
       WHERE o.status IN ('paid', 'completed') AND o.created_at >= ?
       GROUP BY s.id
+      HAVING orders > 0
       ORDER BY orders DESC
       LIMIT 10
     `, [startDateStr])
@@ -125,11 +126,12 @@ export async function GET(req: NextRequest) {
         SUM(oi.quantity) as sold,
         SUM(oi.price * oi.quantity) as revenue
       FROM tickets t
-      LEFT JOIN spots s ON t.spot_id = s.id
-      LEFT JOIN order_items oi ON t.id = oi.ticket_id
-      LEFT JOIN orders o ON oi.order_id = o.id
+      INNER JOIN spots s ON t.spot_id = s.id
+      INNER JOIN order_items oi ON t.id = oi.ticket_id
+      INNER JOIN orders o ON oi.order_id = o.id
       WHERE o.status IN ('paid', 'completed') AND o.created_at >= ?
       GROUP BY t.id
+      HAVING sold > 0
       ORDER BY sold DESC
       LIMIT 10
     `, [startDateStr])

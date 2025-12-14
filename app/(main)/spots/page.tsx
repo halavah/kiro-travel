@@ -17,7 +17,7 @@ export default async function SpotsPage({
   `)
 
   // 构建查询
-  let whereClauses: string[] = []
+  let whereClauses: string[] = ["s.status = 'active'"]
   let queryParams: any[] = []
 
   if (params.category) {

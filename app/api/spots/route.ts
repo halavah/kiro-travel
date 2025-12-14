@@ -101,8 +101,8 @@ export async function POST(request: NextRequest) {
     }
 
     const sql = `
-      INSERT INTO spots (name, description, category_id, location, price, images, status, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, 1, ?)
+      INSERT INTO spots (name, description, category_id, location, price, images, status)
+      VALUES (?, ?, ?, ?, ?, ?, 'active')
     `
     const { lastInsertRowid } = dbRun(sql, [
       name,
@@ -110,8 +110,7 @@ export async function POST(request: NextRequest) {
       category_id,
       location,
       price || 0,
-      JSON.stringify(images || []),
-      user.id
+      JSON.stringify(images || [])
     ])
 
     // 获取创建的景点信息
