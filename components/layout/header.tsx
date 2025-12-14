@@ -197,6 +197,18 @@ export function Header() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
+                    <Link href="/admin/activities" className="cursor-pointer">
+                      <Compass className="mr-2 h-4 w-4" />
+                      旅游活动
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin/news" className="cursor-pointer">
+                      <Newspaper className="mr-2 h-4 w-4" />
+                      新闻资讯
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link href="/admin/analytics" className="cursor-pointer">
                       <BarChart3 className="mr-2 h-4 w-4" />
                       数据分析
@@ -378,6 +390,22 @@ export function Header() {
                 >
                   <Hotel className="h-4 w-4" />
                   酒店管理
+                </Link>
+                <Link
+                  href="/admin/activities"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
+                >
+                  <Compass className="h-4 w-4" />
+                  旅游活动
+                </Link>
+                <Link
+                  href="/admin/news"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
+                >
+                  <Newspaper className="h-4 w-4" />
+                  新闻资讯
                 </Link>
                 <Link
                   href="/admin/analytics"
