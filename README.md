@@ -399,20 +399,48 @@ npm run build
 npm run start
 ```
 
-### Vercel 部署（前端部署）
+### Vercel 部署
 
 > ⚠️ **注意**: SQLite 在 Vercel 无服务器环境中不支持写入操作。仅适合静态/只读部署。
 
-1. 将代码推送到 GitHub
-2. 在 [Vercel](https://vercel.com) 导入项目
-3. 配置构建命令: `npm run build`
-4. 配置启动命令: `npm run start`
+#### 🚀 快速部署
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/your-username/kiro-travel)
+
+#### 📋 部署前检查
+
+在部署之前，运行检查脚本确保配置正确：
+
+```bash
+# macOS/Linux
+./check-deployment.sh
+
+# Windows
+check-deployment.bat
+```
+
+#### 📚 部署文档
+
+- **[完整部署指南](VERCEL_DEPLOYMENT.md)** - 详细的步骤说明
+- **[快速参考](VERCEL_QUICKSTART.md)** - 配置速查表
+- **[部署检查清单](DEPLOYMENT_CHECKLIST.md)** - 分步检查清单
+
+#### 🔑 基本步骤
+
+1. 运行部署检查脚本（`./check-deployment.sh`）
+2. 将代码推送到 GitHub
+3. 在 [Vercel](https://vercel.com) 导入项目
+4. 配置环境变量（`JWT_SECRET`）
 5. 点击部署
 
+#### 💾 数据库选项
+
 **对于需要数据库写入的功能**，建议：
-- 使用 **Vercel Postgres** 或 **Vercel KV**
-- 迁移到 **PostgreSQL** / **MySQL** 云数据库
-- 使用 **Supabase** / **PlanetScale** / **Neon** 等云数据库服务
+- ✅ **Vercel Postgres** ⭐ 推荐
+- ✅ **Supabase** - PostgreSQL 云数据库
+- ✅ **PlanetScale** - MySQL 云数据库
+- ✅ **Neon** - Serverless PostgreSQL
+- ✅ **Turso** - SQLite 边缘数据库
 
 ### Docker 部署（推荐生产环境）
 

@@ -48,26 +48,15 @@ export async function GET(
       LIMIT 10
     `, [id])
 
-    // 获取最近的活动
-    const activities = dbQuery(`
-      SELECT
-        a.*,
-        COUNT(ab.id) as booked_count
-      FROM activities a
-      LEFT JOIN activity_bookings ab ON a.id = ab.activity_id
-      WHERE a.spot_id = ? AND a.status = 'active'
-      GROUP BY a.id
-      ORDER BY a.start_date
-      LIMIT 5
-    `, [id])
+    // 解析 images 字段
+    const spotImages = JSON.parse(spot.images || '[]')
 
     return NextResponse.json({
       success: true,
       data: {
         ...spot,
-        images: JSON.parse(spot.images || '[]'),
-        comments,
-        activities
+        images: spotImages,
+        comments
       }
     })
   } catch (error) {
