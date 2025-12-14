@@ -15,6 +15,7 @@ import { toast } from "sonner"
 import Image from 'next/image'
 import MultiImageUpload from '@/components/admin/MultiImageUpload'
 import Pagination from '@/components/admin/Pagination'
+import { Checkbox } from "@/components/ui/checkbox"
 
 interface Hotel {
   id: string
@@ -39,6 +40,8 @@ export default function AdminHotelsPage() {
   const [editingHotel, setEditingHotel] = useState<Hotel | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
+  const [selectedHotelIds, setSelectedHotelIds] = useState<string[]>([])
+  const [selectAll, setSelectAll] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -188,6 +191,110 @@ export default function AdminHotelsPage() {
       fetchHotels()
     } catch (error: any) {
       toast.error(error.message || '状态更新失败')
+    }
+  }
+
+  // 全选/取消全选
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedHotelIds([])
+      setSelectAll(false)
+    } else {
+      setSelectedHotelIds(paginatedHotels.map(hotel => hotel.id))
+      setSelectAll(true)
+    }
+  }
+
+  // 单个选择
+  const handleSelectHotel = (hotelId: string) => {
+    setSelectedHotelIds(prev => {
+      if (prev.includes(hotelId)) {
+        const newSelected = prev.filter(id => id !== hotelId)
+        if (newSelected.length === 0) setSelectAll(false)
+        return newSelected
+      } else {
+        const newSelected = [...prev, hotelId]
+        if (newSelected.length === paginatedHotels.length) setSelectAll(true)
+        return newSelected
+      }
+    })
+  }
+
+  // 批量删除
+  const handleBatchDelete = async () => {
+    if (selectedHotelIds.length === 0) {
+      toast.error('请至少选择一个酒店')
+      return
+    }
+
+    if (!confirm(`确定要删除选中的 ${selectedHotelIds.length} 个酒店吗？此操作不可恢复。`)) {
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      const deletePromises = selectedHotelIds.map(hotelId =>
+        fetch(`/api/admin/hotels/${hotelId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+      )
+
+      const results = await Promise.all(deletePromises)
+      const failedCount = results.filter(r => !r.ok).length
+
+      if (failedCount === 0) {
+        toast.success(`成功删除 ${selectedHotelIds.length} 个酒店`)
+      } else {
+        toast.warning(`删除完成，但有 ${failedCount} 个酒店删除失败`)
+      }
+
+      setSelectedHotelIds([])
+      setSelectAll(false)
+      fetchHotels()
+    } catch (error) {
+      console.error('Error deleting hotels:', error)
+      toast.error('批量删除失败')
+    }
+  }
+
+  // 批量修改状态
+  const handleBatchStatusChange = async (newStatus: string) => {
+    if (selectedHotelIds.length === 0) {
+      toast.error('请至少选择一个酒店')
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      const updatePromises = selectedHotelIds.map(hotelId =>
+        fetch(`/api/admin/hotels/${hotelId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ status: newStatus })
+        })
+      )
+
+      const results = await Promise.all(updatePromises)
+      const failedCount = results.filter(r => !r.ok).length
+
+      if (failedCount === 0) {
+        toast.success(`成功更新 ${selectedHotelIds.length} 个酒店的状态`)
+      } else {
+        toast.warning(`更新完成，但有 ${failedCount} 个酒店更新失败`)
+      }
+
+      setSelectedHotelIds([])
+      setSelectAll(false)
+      fetchHotels()
+    } catch (error) {
+      console.error('Error updating hotel status:', error)
+      toast.error('批量更新失败')
     }
   }
 
@@ -455,12 +562,44 @@ export default function AdminHotelsPage() {
       {/* 酒店列表 */}
       <Card>
         <CardHeader>
-          <CardTitle>酒店列表 ({filteredHotels.length})</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>酒店列表 ({filteredHotels.length})</CardTitle>
+            {selectedHotelIds.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  已选择 {selectedHotelIds.length} 项
+                </span>
+                <Select onValueChange={handleBatchStatusChange}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="批量修改状态" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">设为上架</SelectItem>
+                    <SelectItem value="inactive">设为下架</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleBatchDelete}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  批量删除
+                </Button>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[50px]">
+                  <Checkbox
+                    checked={selectAll}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
                 <TableHead>酒店</TableHead>
                 <TableHead>位置</TableHead>
                 <TableHead>评级</TableHead>
@@ -472,6 +611,12 @@ export default function AdminHotelsPage() {
             <TableBody>
               {paginatedHotels.map((hotel) => (
                 <TableRow key={hotel.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedHotelIds.includes(hotel.id)}
+                      onCheckedChange={() => handleSelectHotel(hotel.id)}
+                    />
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       {hotel.images?.[0] && (

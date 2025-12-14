@@ -16,6 +16,7 @@ import { toast } from "sonner"
 import Image from 'next/image'
 import MultiImageUpload from '@/components/admin/MultiImageUpload'
 import Pagination from '@/components/admin/Pagination'
+import { Checkbox } from "@/components/ui/checkbox"
 
 interface Spot {
   id: string
@@ -43,6 +44,8 @@ export default function AdminSpotsPage() {
   const [editingSpot, setEditingSpot] = useState<Spot | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
+  const [selectedSpotIds, setSelectedSpotIds] = useState<string[]>([])
+  const [selectAll, setSelectAll] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -205,6 +208,110 @@ export default function AdminSpotsPage() {
       fetchSpots()
     } catch (error: any) {
       toast.error(error.message || '状态更新失败')
+    }
+  }
+
+  // 全选/取消全选
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedSpotIds([])
+      setSelectAll(false)
+    } else {
+      setSelectedSpotIds(paginatedSpots.map(spot => spot.id))
+      setSelectAll(true)
+    }
+  }
+
+  // 单个选择
+  const handleSelectSpot = (spotId: string) => {
+    setSelectedSpotIds(prev => {
+      if (prev.includes(spotId)) {
+        const newSelected = prev.filter(id => id !== spotId)
+        if (newSelected.length === 0) setSelectAll(false)
+        return newSelected
+      } else {
+        const newSelected = [...prev, spotId]
+        if (newSelected.length === paginatedSpots.length) setSelectAll(true)
+        return newSelected
+      }
+    })
+  }
+
+  // 批量删除
+  const handleBatchDelete = async () => {
+    if (selectedSpotIds.length === 0) {
+      toast.error('请至少选择一个景点')
+      return
+    }
+
+    if (!confirm(`确定要删除选中的 ${selectedSpotIds.length} 个景点吗？此操作不可恢复。`)) {
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      const deletePromises = selectedSpotIds.map(spotId =>
+        fetch(`/api/admin/spots/${spotId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+      )
+
+      const results = await Promise.all(deletePromises)
+      const failedCount = results.filter(r => !r.ok).length
+
+      if (failedCount === 0) {
+        toast.success(`成功删除 ${selectedSpotIds.length} 个景点`)
+      } else {
+        toast.warning(`删除完成，但有 ${failedCount} 个景点删除失败`)
+      }
+
+      setSelectedSpotIds([])
+      setSelectAll(false)
+      fetchSpots()
+    } catch (error) {
+      console.error('Error deleting spots:', error)
+      toast.error('批量删除失败')
+    }
+  }
+
+  // 批量修改状态
+  const handleBatchStatusChange = async (newStatus: string) => {
+    if (selectedSpotIds.length === 0) {
+      toast.error('请至少选择一个景点')
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      const updatePromises = selectedSpotIds.map(spotId =>
+        fetch(`/api/admin/spots/${spotId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ status: newStatus })
+        })
+      )
+
+      const results = await Promise.all(updatePromises)
+      const failedCount = results.filter(r => !r.ok).length
+
+      if (failedCount === 0) {
+        toast.success(`成功更新 ${selectedSpotIds.length} 个景点的状态`)
+      } else {
+        toast.warning(`更新完成，但有 ${failedCount} 个景点更新失败`)
+      }
+
+      setSelectedSpotIds([])
+      setSelectAll(false)
+      fetchSpots()
+    } catch (error) {
+      console.error('Error updating spot status:', error)
+      toast.error('批量更新失败')
     }
   }
 
@@ -446,12 +553,44 @@ export default function AdminSpotsPage() {
       {/* 景点列表 */}
       <Card>
         <CardHeader>
-          <CardTitle>景点列表 ({filteredSpots.length})</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>景点列表 ({filteredSpots.length})</CardTitle>
+            {selectedSpotIds.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  已选择 {selectedSpotIds.length} 项
+                </span>
+                <Select onValueChange={handleBatchStatusChange}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="批量修改状态" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">设为上架</SelectItem>
+                    <SelectItem value="inactive">设为下架</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleBatchDelete}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  批量删除
+                </Button>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[50px]">
+                  <Checkbox
+                    checked={selectAll}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
                 <TableHead>景点</TableHead>
                 <TableHead>位置</TableHead>
                 <TableHead>分类</TableHead>
@@ -465,6 +604,12 @@ export default function AdminSpotsPage() {
             <TableBody>
               {paginatedSpots.map((spot) => (
                 <TableRow key={spot.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedSpotIds.includes(spot.id)}
+                      onCheckedChange={() => handleSelectSpot(spot.id)}
+                    />
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       {spot.images?.[0] && (

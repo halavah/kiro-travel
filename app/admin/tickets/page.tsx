@@ -14,6 +14,7 @@ import { Search, Plus, Edit, Trash2, Eye, Power } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
 import Pagination from '@/components/admin/Pagination'
+import { Checkbox } from "@/components/ui/checkbox"
 
 interface Ticket {
   id: string
@@ -39,6 +40,8 @@ export default function AdminTicketsPage() {
   const [editingTicket, setEditingTicket] = useState<Ticket | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
+  const [selectedTicketIds, setSelectedTicketIds] = useState<string[]>([])
+  const [selectAll, setSelectAll] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -205,6 +208,110 @@ export default function AdminTicketsPage() {
       fetchTickets()
     } catch (error: any) {
       toast.error(error.message || '状态更新失败')
+    }
+  }
+
+  // 全选/取消全选
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedTicketIds([])
+      setSelectAll(false)
+    } else {
+      setSelectedTicketIds(paginatedTickets.map(ticket => ticket.id))
+      setSelectAll(true)
+    }
+  }
+
+  // 单个选择
+  const handleSelectTicket = (ticketId: string) => {
+    setSelectedTicketIds(prev => {
+      if (prev.includes(ticketId)) {
+        const newSelected = prev.filter(id => id !== ticketId)
+        if (newSelected.length === 0) setSelectAll(false)
+        return newSelected
+      } else {
+        const newSelected = [...prev, ticketId]
+        if (newSelected.length === paginatedTickets.length) setSelectAll(true)
+        return newSelected
+      }
+    })
+  }
+
+  // 批量删除
+  const handleBatchDelete = async () => {
+    if (selectedTicketIds.length === 0) {
+      toast.error('请至少选择一个门票')
+      return
+    }
+
+    if (!confirm(`确定要删除选中的 ${selectedTicketIds.length} 个门票吗？此操作不可恢复。`)) {
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      const deletePromises = selectedTicketIds.map(ticketId =>
+        fetch(`/api/admin/tickets/${ticketId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+      )
+
+      const results = await Promise.all(deletePromises)
+      const failedCount = results.filter(r => !r.ok).length
+
+      if (failedCount === 0) {
+        toast.success(`成功删除 ${selectedTicketIds.length} 个门票`)
+      } else {
+        toast.warning(`删除完成，但有 ${failedCount} 个门票删除失败`)
+      }
+
+      setSelectedTicketIds([])
+      setSelectAll(false)
+      fetchTickets()
+    } catch (error) {
+      console.error('Error deleting tickets:', error)
+      toast.error('批量删除失败')
+    }
+  }
+
+  // 批量修改状态
+  const handleBatchStatusChange = async (newStatus: string) => {
+    if (selectedTicketIds.length === 0) {
+      toast.error('请至少选择一个门票')
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      const updatePromises = selectedTicketIds.map(ticketId =>
+        fetch(`/api/admin/tickets/${ticketId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ status: newStatus })
+        })
+      )
+
+      const results = await Promise.all(updatePromises)
+      const failedCount = results.filter(r => !r.ok).length
+
+      if (failedCount === 0) {
+        toast.success(`成功更新 ${selectedTicketIds.length} 个门票的状态`)
+      } else {
+        toast.warning(`更新完成，但有 ${failedCount} 个门票更新失败`)
+      }
+
+      setSelectedTicketIds([])
+      setSelectAll(false)
+      fetchTickets()
+    } catch (error) {
+      console.error('Error updating ticket status:', error)
+      toast.error('批量更新失败')
     }
   }
 
@@ -420,12 +527,44 @@ export default function AdminTicketsPage() {
       {/* 门票列表 */}
       <Card>
         <CardHeader>
-          <CardTitle>门票列表 ({filteredTickets.length})</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>门票列表 ({filteredTickets.length})</CardTitle>
+            {selectedTicketIds.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  已选择 {selectedTicketIds.length} 项
+                </span>
+                <Select onValueChange={handleBatchStatusChange}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="批量修改状态" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">设为上架</SelectItem>
+                    <SelectItem value="inactive">设为下架</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleBatchDelete}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  批量删除
+                </Button>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[50px]">
+                  <Checkbox
+                    checked={selectAll}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
                 <TableHead>门票名称</TableHead>
                 <TableHead>景点</TableHead>
                 <TableHead>价格</TableHead>
@@ -438,6 +577,12 @@ export default function AdminTicketsPage() {
             <TableBody>
               {paginatedTickets.map((ticket) => (
                 <TableRow key={ticket.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedTicketIds.includes(ticket.id)}
+                      onCheckedChange={() => handleSelectTicket(ticket.id)}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium">{ticket.name}</TableCell>
                   <TableCell>
                     <div>

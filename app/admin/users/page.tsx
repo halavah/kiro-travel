@@ -9,9 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Search, Mail, Shield, Calendar, Eye } from "lucide-react"
+import { Search, Mail, Shield, Calendar, Eye, Trash2 } from "lucide-react"
 import Link from "next/link"
 import Pagination from '@/components/admin/Pagination'
+import { Checkbox } from "@/components/ui/checkbox"
+import { toast } from 'sonner'
 
 interface User {
   id: string
@@ -33,6 +35,8 @@ export default function AdminUsersPage() {
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
+  const [selectAll, setSelectAll] = useState(false)
 
   const fetchUsers = async () => {
     try {
@@ -83,9 +87,114 @@ export default function AdminUsersPage() {
 
       // 更新本地状态
       setUsers(users.map(u => u.id === userId ? { ...u, role: newRole as 'user' | 'guide' | 'admin' } : u))
+      toast.success('角色更新成功')
     } catch (error) {
       console.error('Error updating user role:', error)
-      alert('更新角色失败')
+      toast.error('更新角色失败')
+    }
+  }
+
+  // 全选/取消全选
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedUserIds([])
+      setSelectAll(false)
+    } else {
+      setSelectedUserIds(paginatedUsers.map(user => user.id))
+      setSelectAll(true)
+    }
+  }
+
+  // 单个选择
+  const handleSelectUser = (userId: string) => {
+    setSelectedUserIds(prev => {
+      if (prev.includes(userId)) {
+        const newSelected = prev.filter(id => id !== userId)
+        if (newSelected.length === 0) setSelectAll(false)
+        return newSelected
+      } else {
+        const newSelected = [...prev, userId]
+        if (newSelected.length === paginatedUsers.length) setSelectAll(true)
+        return newSelected
+      }
+    })
+  }
+
+  // 批量删除
+  const handleBatchDelete = async () => {
+    if (selectedUserIds.length === 0) {
+      toast.error('请至少选择一个用户')
+      return
+    }
+
+    if (!confirm(`确定要删除选中的 ${selectedUserIds.length} 个用户吗？此操作不可恢复。`)) {
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      const deletePromises = selectedUserIds.map(userId =>
+        fetch(`/api/admin/users/${userId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+      )
+
+      const results = await Promise.all(deletePromises)
+      const failedCount = results.filter(r => !r.ok).length
+
+      if (failedCount === 0) {
+        toast.success(`成功删除 ${selectedUserIds.length} 个用户`)
+      } else {
+        toast.warning(`删除完成，但有 ${failedCount} 个用户删除失败`)
+      }
+
+      setSelectedUserIds([])
+      setSelectAll(false)
+      fetchUsers()
+    } catch (error) {
+      console.error('Error deleting users:', error)
+      toast.error('批量删除失败')
+    }
+  }
+
+  // 批量修改角色
+  const handleBatchRoleChange = async (newRole: string) => {
+    if (selectedUserIds.length === 0) {
+      toast.error('请至少选择一个用户')
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      const updatePromises = selectedUserIds.map(userId =>
+        fetch(`/api/admin/users/${userId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ role: newRole })
+        })
+      )
+
+      const results = await Promise.all(updatePromises)
+      const failedCount = results.filter(r => !r.ok).length
+
+      if (failedCount === 0) {
+        toast.success(`成功更新 ${selectedUserIds.length} 个用户的角色`)
+      } else {
+        toast.warning(`更新完成，但有 ${failedCount} 个用户更新失败`)
+      }
+
+      setSelectedUserIds([])
+      setSelectAll(false)
+      fetchUsers()
+    } catch (error) {
+      console.error('Error updating roles:', error)
+      toast.error('批量更新失败')
     }
   }
 
@@ -169,12 +278,45 @@ export default function AdminUsersPage() {
       {/* 用户列表 */}
       <Card>
         <CardHeader>
-          <CardTitle>用户列表 ({filteredUsers.length})</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>用户列表 ({filteredUsers.length})</CardTitle>
+            {selectedUserIds.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  已选择 {selectedUserIds.length} 项
+                </span>
+                <Select onValueChange={handleBatchRoleChange}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="批量修改角色" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="user">设为用户</SelectItem>
+                    <SelectItem value="guide">设为导游</SelectItem>
+                    <SelectItem value="admin">设为管理员</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleBatchDelete}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  批量删除
+                </Button>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[50px]">
+                  <Checkbox
+                    checked={selectAll}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
                 <TableHead>用户</TableHead>
                 <TableHead>角色</TableHead>
                 <TableHead>注册时间</TableHead>
@@ -185,6 +327,12 @@ export default function AdminUsersPage() {
             <TableBody>
               {paginatedUsers.map((user) => (
                 <TableRow key={user.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedUserIds.includes(user.id)}
+                      onCheckedChange={() => handleSelectUser(user.id)}
+                    />
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar>

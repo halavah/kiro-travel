@@ -7,9 +7,11 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Clock, CheckCircle2, XCircle, Package, Search, Eye } from "lucide-react"
+import { Clock, CheckCircle2, XCircle, Package, Search, Eye, Trash2 } from "lucide-react"
 import Link from "next/link"
 import Pagination from '@/components/admin/Pagination'
+import { Checkbox } from "@/components/ui/checkbox"
+import { toast } from 'sonner'
 
 interface Order {
   id: string
@@ -37,6 +39,8 @@ export default function AdminOrdersPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(10)
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([])
+  const [selectAll, setSelectAll] = useState(false)
 
   const fetchOrders = async () => {
     try {
@@ -64,6 +68,110 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     fetchOrders()
   }, [statusFilter])
+
+  // 全选/取消全选
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedOrderIds([])
+      setSelectAll(false)
+    } else {
+      setSelectedOrderIds(paginatedOrders.map(order => order.id))
+      setSelectAll(true)
+    }
+  }
+
+  // 单个选择
+  const handleSelectOrder = (orderId: string) => {
+    setSelectedOrderIds(prev => {
+      if (prev.includes(orderId)) {
+        const newSelected = prev.filter(id => id !== orderId)
+        if (newSelected.length === 0) setSelectAll(false)
+        return newSelected
+      } else {
+        const newSelected = [...prev, orderId]
+        if (newSelected.length === paginatedOrders.length) setSelectAll(true)
+        return newSelected
+      }
+    })
+  }
+
+  // 批量删除
+  const handleBatchDelete = async () => {
+    if (selectedOrderIds.length === 0) {
+      toast.error('请至少选择一个订单')
+      return
+    }
+
+    if (!confirm(`确定要删除选中的 ${selectedOrderIds.length} 个订单吗？此操作不可恢复。`)) {
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      const deletePromises = selectedOrderIds.map(orderId =>
+        fetch(`/api/admin/orders/${orderId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+      )
+
+      const results = await Promise.all(deletePromises)
+      const failedCount = results.filter(r => !r.ok).length
+
+      if (failedCount === 0) {
+        toast.success(`成功删除 ${selectedOrderIds.length} 个订单`)
+      } else {
+        toast.warning(`删除完成，但有 ${failedCount} 个订单删除失败`)
+      }
+
+      setSelectedOrderIds([])
+      setSelectAll(false)
+      fetchOrders()
+    } catch (error) {
+      console.error('Error deleting orders:', error)
+      toast.error('批量删除失败')
+    }
+  }
+
+  // 批量修改状态
+  const handleBatchStatusChange = async (newStatus: string) => {
+    if (selectedOrderIds.length === 0) {
+      toast.error('请至少选择一个订单')
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      const updatePromises = selectedOrderIds.map(orderId =>
+        fetch(`/api/admin/orders/${orderId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ status: newStatus })
+        })
+      )
+
+      const results = await Promise.all(updatePromises)
+      const failedCount = results.filter(r => !r.ok).length
+
+      if (failedCount === 0) {
+        toast.success(`成功更新 ${selectedOrderIds.length} 个订单的状态`)
+      } else {
+        toast.warning(`更新完成，但有 ${failedCount} 个订单更新失败`)
+      }
+
+      setSelectedOrderIds([])
+      setSelectAll(false)
+      fetchOrders()
+    } catch (error) {
+      console.error('Error updating order status:', error)
+      toast.error('批量更新失败')
+    }
+  }
 
   const filteredOrders = orders.filter(order => {
     if (searchTerm) {
@@ -146,12 +254,46 @@ export default function AdminOrdersPage() {
       {/* 订单列表 */}
       <Card>
         <CardHeader>
-          <CardTitle>订单列表 ({filteredOrders.length})</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>订单列表 ({filteredOrders.length})</CardTitle>
+            {selectedOrderIds.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  已选择 {selectedOrderIds.length} 项
+                </span>
+                <Select onValueChange={handleBatchStatusChange}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="批量修改状态" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">设为待支付</SelectItem>
+                    <SelectItem value="paid">设为已支付</SelectItem>
+                    <SelectItem value="completed">设为已完成</SelectItem>
+                    <SelectItem value="cancelled">设为已取消</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleBatchDelete}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  批量删除
+                </Button>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[50px]">
+                  <Checkbox
+                    checked={selectAll}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
                 <TableHead>订单号</TableHead>
                 <TableHead>用户</TableHead>
                 <TableHead>金额</TableHead>
@@ -165,6 +307,12 @@ export default function AdminOrdersPage() {
                 const StatusIcon = statusConfig[order.status].icon
                 return (
                   <TableRow key={order.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedOrderIds.includes(order.id)}
+                        onCheckedChange={() => handleSelectOrder(order.id)}
+                      />
+                    </TableCell>
                     <TableCell className="font-mono">{order.order_no}</TableCell>
                     <TableCell>
                       <div>
