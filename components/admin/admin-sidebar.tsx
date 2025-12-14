@@ -12,7 +12,9 @@ import {
   Ticket,
   Hotel,
   Settings,
-  BarChart
+  BarChart,
+  Compass,
+  Newspaper
 } from "lucide-react"
 
 const menuItems = [
@@ -22,6 +24,8 @@ const menuItems = [
   { href: "/admin/spots", label: "景点管理", icon: MapPin },
   { href: "/admin/tickets", label: "门票管理", icon: Ticket },
   { href: "/admin/hotels", label: "酒店管理", icon: Hotel },
+  { href: "/admin/activities", label: "旅游活动", icon: Compass },
+  { href: "/admin/news", label: "新闻资讯", icon: Newspaper },
   { href: "/admin/analytics", label: "数据分析", icon: BarChart },
   { href: "/admin/settings", label: "系统设置", icon: Settings },
 ]

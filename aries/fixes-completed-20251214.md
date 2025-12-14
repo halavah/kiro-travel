@@ -141,14 +141,15 @@ curl http://localhost:3000/api/spots/2
 
 ### 修改的文件
 1. `/app/api/spots/[id]/route.ts` - 修复活动查询错误
+2. `/components/admin/admin-sidebar.tsx` - 添加旅游活动和新闻资讯菜单项
 
 ### 新建的文件
-2. `/app/api/admin/activities/route.ts` - 活动管理API
-3. `/app/api/activities/[id]/route.ts` - 活动详情CRUD
-4. `/app/admin/activities/page.tsx` - 活动管理页面
-5. `/app/api/admin/news/route.ts` - 新闻管理API
-6. `/app/api/news/[id]/route.ts` - 新闻详情CRUD
-7. `/app/admin/news/page.tsx` - 新闻管理页面
+3. `/app/api/admin/activities/route.ts` - 活动管理API
+4. `/app/api/activities/[id]/route.ts` - 活动详情CRUD
+5. `/app/admin/activities/page.tsx` - 活动管理页面
+6. `/app/api/admin/news/route.ts` - 新闻管理API
+7. `/app/api/news/[id]/route.ts` - 新闻详情CRUD
+8. `/app/admin/news/page.tsx` - 新闻管理页面
 
 ---
 
