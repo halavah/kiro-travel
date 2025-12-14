@@ -12,7 +12,6 @@ import {
   Eye,
   Heart,
   ThumbsUp,
-  Share2,
   Ticket,
   ArrowLeft,
   ChevronLeft,
@@ -288,24 +287,6 @@ export function SpotDetail({ spot, tickets, isLoggedIn }: SpotDetailProps) {
                     <Heart className={`h-4 w-4 mr-1 ${isFavorited ? "fill-current" : ""}`} />
                   )}
                   {isFavorited ? "已收藏" : "收藏"}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    navigator.share({
-                      title: spot.name,
-                      text: spot.description || "",
-                      url: window.location.href
-                    }).catch(() => {
-                      // 如果不支持分享API，复制链接到剪贴板
-                      navigator.clipboard.writeText(window.location.href)
-                      toast.success("链接已复制到剪贴板")
-                    })
-                  }}
-                >
-                  <Share2 className="h-4 w-4 mr-1" />
-                  分享
                 </Button>
                 <Button
                   variant="outline"

@@ -58,7 +58,7 @@ export function HotelDetail({ hotel, isLoggedIn }: HotelDetailProps) {
 
   const handleBookRoom = (room: HotelRoom) => {
     if (!isLoggedIn) {
-      router.push("/login")
+      router.push("/auth/sign-in")
       return
     }
     setSelectedRoom(room)
@@ -69,19 +69,14 @@ export function HotelDetail({ hotel, isLoggedIn }: HotelDetailProps) {
     if (!selectedRoom || !checkIn || !checkOut) return
 
     setIsBooking(true)
-    const token = localStorage.getItem('token')
-    if (!token) {
-      router.push("/login")
-      return
-    }
 
     try {
       const response = await fetch('/api/bookings', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
+        credentials: 'include', // 使用 cookie 认证
         body: JSON.stringify({
           room_id: selectedRoom.id,
           hotel_name: hotel.name,
@@ -93,6 +88,11 @@ export function HotelDetail({ hotel, isLoggedIn }: HotelDetailProps) {
           status: "pending"
         })
       })
+
+      if (response.status === 401) {
+        router.push("/auth/sign-in")
+        return
+      }
 
       if (!response.ok) throw new Error('预订失败')
 

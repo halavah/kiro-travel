@@ -43,9 +43,12 @@ export default async function HotelDetailPage({
     is_active: hotelRaw.status === "active",
     rooms: roomsRaw.map((room: any) => ({
       ...room,
+      price: room.price_per_night, // 映射字段名
+      capacity: room.max_occupancy, // 映射字段名
+      stock: 10, // 临时设置库存，后续可以从数据库获取
       images: room.images ? JSON.parse(room.images) : [],
       amenities: room.amenities ? JSON.parse(room.amenities) : [],
-      is_active: room.status === "active",
+      is_active: room.status === "available",
     })),
   }
 
