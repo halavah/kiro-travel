@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Search, Plus, Edit, Trash2, Star, Eye, MapPin } from "lucide-react"
+import { Search, Plus, Edit, Trash2, Star, Eye, MapPin, Power } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
 import Image from 'next/image'
@@ -174,6 +174,33 @@ export default function AdminSpotsPage() {
       fetchSpots()
     } catch (error: any) {
       toast.error(error.message || '删除失败')
+    }
+  }
+
+  const handleToggleStatus = async (spotId: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active'
+    const statusText = newStatus === 'active' ? '上架' : '下架'
+
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch(`/api/admin/spots/${spotId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || '状态更新失败')
+      }
+
+      toast.success(`景点已${statusText}`)
+      fetchSpots()
+    } catch (error: any) {
+      toast.error(error.message || '状态更新失败')
     }
   }
 
@@ -471,6 +498,14 @@ export default function AdminSpotsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleToggleStatus(spot.id, spot.status)}
+                        title={spot.status === 'active' ? '下架' : '上架'}
+                      >
+                        <Power className={`h-4 w-4 ${spot.status === 'active' ? 'text-green-600' : 'text-gray-400'}`} />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"

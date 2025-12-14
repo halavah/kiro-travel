@@ -203,19 +203,28 @@ export default function AdminAnalyticsPage() {
               <CardDescription>展示收入、订单和用户增长趋势</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={data.salesData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis yAxisId="left" />
-                  <YAxis yAxisId="right" orientation="right" />
-                  <Tooltip />
-                  <Legend />
-                  <Bar yAxisId="left" dataKey="revenue" fill="#8884d8" name="收入" />
-                  <Line yAxisId="right" type="monotone" dataKey="orders" stroke="#82ca9d" name="订单数" />
-                  <Line yAxisId="right" type="monotone" dataKey="users" stroke="#ffc658" name="新用户" />
-                </LineChart>
-              </ResponsiveContainer>
+              {data.salesData && data.salesData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={data.salesData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis yAxisId="left" />
+                    <YAxis yAxisId="right" orientation="right" />
+                    <Tooltip />
+                    <Legend />
+                    <Bar yAxisId="left" dataKey="revenue" fill="#8884d8" name="收入" />
+                    <Line yAxisId="right" type="monotone" dataKey="orders" stroke="#82ca9d" name="订单数" />
+                    <Line yAxisId="right" type="monotone" dataKey="users" stroke="#ffc658" name="新用户" />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                  <div className="text-center">
+                    <p className="text-lg mb-2">暂无销售数据</p>
+                    <p className="text-sm">所选时间范围内没有订单记录</p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -227,17 +236,26 @@ export default function AdminAnalyticsPage() {
               <CardDescription>按订单数和收入排序的热门景点</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={data.topSpots}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="orders" fill="#8884d8" name="订单数" />
-                  <Bar dataKey="revenue" fill="#82ca9d" name="收入" />
-                </BarChart>
-              </ResponsiveContainer>
+              {data.topSpots && data.topSpots.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={data.topSpots}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="orders" fill="#8884d8" name="订单数" />
+                    <Bar dataKey="revenue" fill="#82ca9d" name="收入" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                  <div className="text-center">
+                    <p className="text-lg mb-2">暂无景点数据</p>
+                    <p className="text-sm">所选时间范围内没有景点订单</p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -249,17 +267,26 @@ export default function AdminAnalyticsPage() {
               <CardDescription>最受欢迎的门票类型</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={data.topTickets} layout="horizontal">
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" />
-                  <YAxis dataKey="name" type="category" width={100} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="sold" fill="#8884d8" name="售出数量" />
-                  <Bar dataKey="revenue" fill="#82ca9d" name="收入" />
-                </BarChart>
-              </ResponsiveContainer>
+              {data.topTickets && data.topTickets.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={data.topTickets} layout="horizontal">
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis dataKey="name" type="category" width={100} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="sold" fill="#8884d8" name="售出数量" />
+                    <Bar dataKey="revenue" fill="#82ca9d" name="收入" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                  <div className="text-center">
+                    <p className="text-lg mb-2">暂无门票数据</p>
+                    <p className="text-sm">所选时间范围内没有门票销售</p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

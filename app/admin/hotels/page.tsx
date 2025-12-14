@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Search, Plus, Edit, Trash2, Star, MapPin, Phone } from "lucide-react"
+import { Search, Plus, Edit, Trash2, Star, MapPin, Phone, Power } from "lucide-react"
 import { toast } from "sonner"
 import Image from 'next/image'
 import MultiImageUpload from '@/components/admin/MultiImageUpload'
@@ -160,6 +160,33 @@ export default function AdminHotelsPage() {
     }
   }
 
+  const handleToggleStatus = async (hotelId: string, currentStatus: 'active' | 'inactive') => {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active'
+    const statusText = newStatus === 'active' ? '上架' : '下架'
+
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch(`/api/admin/hotels/${hotelId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || '状态更新失败')
+      }
+
+      toast.success(`酒店已${statusText}`)
+      fetchHotels()
+    } catch (error: any) {
+      toast.error(error.message || '状态更新失败')
+    }
+  }
+
   const handleAddFacility = () => {
     setFormData({
       ...formData,
@@ -297,14 +324,26 @@ export default function AdminHotelsPage() {
                       onValueChange={(value) => setFormData({ ...formData, rating: value })}
                     >
                       <SelectTrigger className="w-full">
-                        <SelectValue />
+                        <SelectValue placeholder="选择评级" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="5">五星</SelectItem>
-                        <SelectItem value="4.5">四星半</SelectItem>
-                        <SelectItem value="4">四星</SelectItem>
-                        <SelectItem value="3.5">三星半</SelectItem>
-                        <SelectItem value="3">三星</SelectItem>
+                        <SelectItem value="5">五星 (5.0)</SelectItem>
+                        <SelectItem value="4.9">4.9</SelectItem>
+                        <SelectItem value="4.8">4.8</SelectItem>
+                        <SelectItem value="4.7">4.7</SelectItem>
+                        <SelectItem value="4.6">4.6</SelectItem>
+                        <SelectItem value="4.5">四星半 (4.5)</SelectItem>
+                        <SelectItem value="4.4">4.4</SelectItem>
+                        <SelectItem value="4.3">4.3</SelectItem>
+                        <SelectItem value="4.2">4.2</SelectItem>
+                        <SelectItem value="4.1">4.1</SelectItem>
+                        <SelectItem value="4">四星 (4.0)</SelectItem>
+                        <SelectItem value="3.9">3.9</SelectItem>
+                        <SelectItem value="3.8">3.8</SelectItem>
+                        <SelectItem value="3.7">3.7</SelectItem>
+                        <SelectItem value="3.6">3.6</SelectItem>
+                        <SelectItem value="3.5">三星半 (3.5)</SelectItem>
+                        <SelectItem value="3">三星 (3.0)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -481,6 +520,14 @@ export default function AdminHotelsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleToggleStatus(hotel.id, hotel.status)}
+                        title={hotel.status === 'active' ? '下架' : '上架'}
+                      >
+                        <Power className={`h-4 w-4 ${hotel.status === 'active' ? 'text-green-600' : 'text-gray-400'}`} />
+                      </Button>
                       <Button variant="ghost" size="sm" onClick={() => handleEdit(hotel)}>
                         <Edit className="h-4 w-4" />
                       </Button>
