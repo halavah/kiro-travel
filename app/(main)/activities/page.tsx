@@ -15,7 +15,7 @@ export default async function ActivitiesPage({
   let queryParams: any[] = []
 
   if (params.search) {
-    whereClauses.push("(a.name LIKE ? OR a.description LIKE ?)")
+    whereClauses.push("(a.title LIKE ? OR a.description LIKE ?)")
     queryParams.push(`%${params.search}%`, `%${params.search}%`)
   }
 
@@ -41,7 +41,7 @@ export default async function ActivitiesPage({
     LEFT JOIN activity_participants ap ON a.id = ap.activity_id AND ap.status = 'confirmed'
     WHERE ${whereClause}
     GROUP BY a.id
-    ORDER BY a.start_date DESC
+    ORDER BY a.start_time DESC
   `,
     queryParams,
   )
