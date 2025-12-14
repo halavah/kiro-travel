@@ -33,10 +33,12 @@ export default function FavoritesPage() {
 
   const fetchFavorites = async () => {
     try {
-      const res = await fetch('/api/favorites')
+      const res = await fetch('/api/favorites', {
+        credentials: 'include' // 自动发送 cookie
+      })
 
       if (res.status === 401) {
-        router.push('/login')
+        router.push('/auth/sign-in')
         return
       }
 
@@ -59,7 +61,8 @@ export default function FavoritesPage() {
     setRemoving(spotId)
     try {
       const res = await fetch(`/api/favorites?spot_id=${spotId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include' // 自动发送 cookie
       })
 
       if (!res.ok) {

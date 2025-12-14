@@ -17,12 +17,9 @@ interface SpotCommentsProps {
 }
 
 const fetcher = (url: string) => {
-  const token = localStorage.getItem('token')
-  const headers: HeadersInit = {}
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
-  }
-  return fetch(url, { headers }).then(r => {
+  return fetch(url, {
+    credentials: 'include' // 自动发送 cookie
+  }).then(r => {
     if (!r.ok) throw new Error('获取评论失败')
     return r.json()
   })
@@ -39,7 +36,7 @@ export function SpotComments({ spotId, isLoggedIn }: SpotCommentsProps) {
 
   const handleSubmit = async () => {
     if (!isLoggedIn) {
-      router.push("/login")
+      router.push("/auth/sign-in")
       return
     }
 
@@ -49,26 +46,27 @@ export function SpotComments({ spotId, isLoggedIn }: SpotCommentsProps) {
     }
 
     setIsSubmitting(true)
-    const token = localStorage.getItem('token')
-    if (!token) {
-      router.push("/login")
-      return
-    }
 
     try {
       const response = await fetch(`/api/spots/${spotId}/comments`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
+        credentials: 'include', // 自动发送 cookie
         body: JSON.stringify({
           content: content.trim(),
           rating
         })
       })
 
-      if (!response.ok) throw new Error('评论发表失败')
+      if (!response.ok) {
+        if (response.status === 401) {
+          router.push("/auth/sign-in")
+          return
+        }
+        throw new Error('评论发表失败')
+      }
 
       setContent("")
       setRating(5)

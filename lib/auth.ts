@@ -97,12 +97,30 @@ export async function registerUser(userData: {
 
 // 中间件：验证请求中的 JWT
 export function validateAuth(request: Request): { user: any; error?: string } {
+  // 首先尝试从 Authorization header 获取 token
+  let token = null
   const authHeader = request.headers.get('authorization')
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7)
+  }
+
+  // 如果 header 中没有，尝试从 cookie 获取
+  if (!token) {
+    const cookieHeader = request.headers.get('cookie')
+    if (cookieHeader) {
+      const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+        const [key, value] = cookie.trim().split('=')
+        acc[key] = value
+        return acc
+      }, {} as Record<string, string>)
+      token = cookies.token
+    }
+  }
+
+  if (!token) {
     return { user: null, error: '未提供认证令牌' }
   }
 
-  const token = authHeader.substring(7)
   const decoded = verifyToken(token)
   if (!decoded) {
     return { user: null, error: '无效的认证令牌' }
