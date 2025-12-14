@@ -41,8 +41,7 @@ export async function GET(
         o.paid_at,
         o.created_at,
         p.full_name as username,
-        p.email,
-        p.phone
+        p.email
       FROM orders o
       LEFT JOIN profiles p ON o.user_id = p.id
       WHERE o.id = ?

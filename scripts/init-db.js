@@ -691,7 +691,9 @@ const generateOrderData = () => {
         { ticket_id: 5, quantity: 1 }, // 长城成人票 x1
       ],
       status: 'paid',
-      note: '访问日期: 2025-01-15, 访问时间: 09:00, 联系人: 张三, 电话: 13800138001'
+      note: '访问日期: 2025-01-15, 访问时间: 09:00, 联系人: 张三, 电话: 13800138001',
+      paid_at: '2025-01-05 10:20:00',
+      created_at: '2025-01-04 15:30:00'
     },
     {
       user_id: 5, // 李四
@@ -699,7 +701,9 @@ const generateOrderData = () => {
         { ticket_id: 10, quantity: 1 }, // 黄山旺季门票 x1
         { ticket_id: 12, quantity: 1 }, // 黄山索道票 x1
       ],
-      status: 'pending'
+      status: 'completed',
+      paid_at: '2025-01-10 14:30:00',
+      created_at: '2025-01-09 11:20:00'
     },
     {
       user_id: 6, // 王五
@@ -707,7 +711,8 @@ const generateOrderData = () => {
         { ticket_id: 13, quantity: 3 }, // 九寨沟旺季门票 x3
       ],
       status: 'completed',
-      paid_at: '2025-01-10 14:30:00'
+      paid_at: '2025-01-10 14:30:00',
+      created_at: '2025-01-09 09:15:00'
     },
     {
       user_id: 7, // 赵六
@@ -715,7 +720,9 @@ const generateOrderData = () => {
         { ticket_id: 2, quantity: 1 }, // 故宫学生票 x1
         { ticket_id: 7, quantity: 2 }, // 长城缆车往返票 x2
       ],
-      status: 'cancelled'
+      status: 'paid',
+      paid_at: '2025-01-12 16:45:00',
+      created_at: '2025-01-12 10:30:00'
     },
     {
       user_id: 8, // 钱七
@@ -723,8 +730,103 @@ const generateOrderData = () => {
         { ticket_id: 3, quantity: 1 }, // 故宫老人票 x1
         { ticket_id: 4, quantity: 1 }, // 故宫儿童票 x1
       ],
+      status: 'completed',
+      note: '访问日期: 2025-02-01, 访问时间: 10:00, 联系人: 钱七, 电话: 13800138007, 备注: 带老人和小孩',
+      paid_at: '2024-12-20 13:25:00',
+      created_at: '2024-12-20 10:00:00'
+    },
+    // 添加更多订单以填充analytics数据
+    {
+      user_id: 4,
+      items: [
+        { ticket_id: 13, quantity: 2 }, // 九寨沟旺季门票 x2
+        { ticket_id: 14, quantity: 2 }, // 九寨沟观光车票 x2
+      ],
+      status: 'paid',
+      paid_at: '2024-12-15 09:30:00',
+      created_at: '2024-12-14 14:20:00'
+    },
+    {
+      user_id: 5,
+      items: [
+        { ticket_id: 1, quantity: 3 }, // 故宫成人票 x3
+      ],
+      status: 'completed',
+      paid_at: '2024-12-18 11:15:00',
+      created_at: '2024-12-17 16:40:00'
+    },
+    {
+      user_id: 6,
+      items: [
+        { ticket_id: 5, quantity: 2 }, // 长城成人票 x2
+        { ticket_id: 6, quantity: 2 }, // 长城学生票 x2
+      ],
+      status: 'paid',
+      paid_at: '2024-12-22 10:05:00',
+      created_at: '2024-12-21 13:25:00'
+    },
+    {
+      user_id: 7,
+      items: [
+        { ticket_id: 10, quantity: 1 }, // 黄山旺季门票 x1
+      ],
+      status: 'completed',
+      paid_at: '2024-12-25 14:30:00',
+      created_at: '2024-12-24 09:10:00'
+    },
+    {
+      user_id: 8,
+      items: [
+        { ticket_id: 1, quantity: 1 }, // 故宫成人票 x1
+        { ticket_id: 2, quantity: 2 }, // 故宫学生票 x2
+      ],
+      status: 'paid',
+      paid_at: '2024-12-28 15:45:00',
+      created_at: '2024-12-27 11:30:00'
+    },
+    {
+      user_id: 4,
+      items: [
+        { ticket_id: 13, quantity: 1 }, // 九寨沟旺季门票 x1
+      ],
+      status: 'completed',
+      paid_at: '2025-01-02 10:20:00',
+      created_at: '2025-01-01 08:15:00'
+    },
+    {
+      user_id: 5,
+      items: [
+        { ticket_id: 5, quantity: 4 }, // 长城成人票 x4
+      ],
+      status: 'paid',
+      paid_at: '2025-01-06 13:55:00',
+      created_at: '2025-01-05 17:20:00'
+    },
+    {
+      user_id: 6,
+      items: [
+        { ticket_id: 10, quantity: 2 }, // 黄山旺季门票 x2
+        { ticket_id: 12, quantity: 2 }, // 黄山索道票 x2
+      ],
+      status: 'completed',
+      paid_at: '2025-01-08 09:40:00',
+      created_at: '2025-01-07 14:50:00'
+    },
+    {
+      user_id: 7,
+      items: [
+        { ticket_id: 1, quantity: 2 }, // 故宫成人票 x2
+      ],
       status: 'pending',
-      note: '访问日期: 2025-02-01, 访问时间: 10:00, 联系人: 钱七, 电话: 13800138007, 备注: 带老人和小孩'
+      created_at: '2025-01-13 10:30:00'
+    },
+    {
+      user_id: 8,
+      items: [
+        { ticket_id: 13, quantity: 3 }, // 九寨沟旺季门票 x3
+      ],
+      status: 'cancelled',
+      created_at: '2025-01-11 16:20:00'
     }
   ];
 
@@ -759,7 +861,7 @@ const generateOrderData = () => {
       order.status,
       order.note || null,
       order.paid_at || null,
-      new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString() // 随机过去30天内的时间
+      order.created_at || new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString() // 使用自定义时间或随机过去30天内的时间
     );
 
     // 创建订单项
