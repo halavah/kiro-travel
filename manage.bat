@@ -41,15 +41,19 @@ echo.
 echo 其他:
 echo  14) 代码检查 (lint)
 echo  15) 类型检查 (tsc)
-echo   0) 退出
+echo.
+echo 部署:
+echo   0) 部署 (deploy) - Git 提交并推送
+echo.
+echo  99) 退出
 echo.
 echo ========================================
 
 rem 读取用户输入，提供提示
-set /p choice=请输入序号 (默认: 2):
+set /p choice=请输入序号 (默认: 0):
 
-rem 如果用户直接回车，则设置默认值为 2
-if "%choice%"=="" set "choice=2"
+rem 如果用户直接回车，则设置默认值为 0
+if "%choice%"=="" set "choice=0"
 
 rem 根据用户选择执行对应操作
 if "%choice%"=="1"  goto opt1
@@ -68,10 +72,11 @@ if "%choice%"=="13" goto opt13
 if "%choice%"=="14" goto opt14
 if "%choice%"=="15" goto opt15
 if "%choice%"=="0"  goto opt0
+if "%choice%"=="99" goto opt99
 
 rem 如果输入无效则执行默认操作
-echo 无效选择，默认执行完整重启...
-goto opt2
+echo 无效选择，默认执行部署...
+goto opt0
 
 :opt1
 echo 启动开发服务器...
@@ -221,6 +226,81 @@ pause
 goto :eof
 
 :opt0
+echo ========================================
+echo   Git 部署流程
+echo ========================================
+echo.
+
+setlocal EnableDelayedExpansion
+
+rem Get current branch name
+echo 检测当前 Git 分支...
+for /f "tokens=*" %%i in ('git rev-parse --abbrev-ref HEAD 2^>nul') do set "current_branch=%%i"
+if "!current_branch!"=="" (
+	echo 未能检测到 Git 分支。
+	echo 请确保当前目录是 Git 仓库。
+	pause
+	goto :eof
+)
+echo 当前分支: !current_branch!
+echo.
+
+rem Stage all changes first
+echo 暂存所有更改...
+git add .
+if !errorlevel! neq 0 (
+	echo 暂存失败。
+	pause
+	goto :eof
+)
+
+rem Check if there are changes to commit
+git diff --staged --quiet
+if !errorlevel! equ 0 (
+	echo 没有需要提交的更改。
+	echo.
+	echo 拉取远程最新更改...
+	git pull origin !current_branch!
+	pause
+	goto :eof
+)
+
+rem Commit changes with timestamped message
+set "timestamp=%date:~0,4%%date:~5,2%%date:~8,2%_%time:~0,2%%time:~3,2%%time:~6,2%"
+set "timestamp=!timestamp: =0!"
+echo 提交更改，时间戳: !timestamp!...
+git commit -m "!timestamp!"
+if !errorlevel! neq 0 (
+	echo 提交失败。
+	pause
+	goto :eof
+)
+
+rem Pull latest changes from the remote repository
+echo 拉取远程最新更改...
+git pull origin !current_branch!
+if !errorlevel! neq 0 (
+	echo 拉取失败。如有冲突请解决后重新运行。
+	pause
+	goto :eof
+)
+
+rem Push changes to the repository
+echo 推送更改到远程仓库...
+git push origin !current_branch!
+if !errorlevel! neq 0 (
+	echo 推送失败。
+	pause
+	goto :eof
+)
+
+echo.
+echo [OK] 更改已成功提交并推送到分支: !current_branch!
+endlocal
+pause
+goto :eof
+
+:opt99
 echo 退出脚本
 exit /b 0
 

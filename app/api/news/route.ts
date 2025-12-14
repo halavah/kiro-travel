@@ -5,28 +5,20 @@ import { validateAuth, checkRole } from '@/lib/auth'
 // GET /api/news - 获取新闻列表
 export async function GET(request: NextRequest) {
   try {
-    // TODO: 创建 news 和 news_categories 表后再启用此功能
-    // 暂时返回空数据
-    return NextResponse.json({
-      success: true,
-      data: [],
-      pagination: {
-        page: 1,
-        limit: 10,
-        total: 0,
-        totalPages: 0
-      }
-    })
-
-    /* 等表创建后启用以下代码
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
     const search = searchParams.get('search') || ''
     const categoryId = searchParams.get('category_id') || ''
+    const isPublished = searchParams.get('is_published')
 
-    let whereClause = 'WHERE n.is_published = 1'
+    let whereClause = 'WHERE 1=1'
     const params: any[] = []
+
+    // 默认只显示已发布的新闻，除非明确指定
+    if (isPublished !== 'false') {
+      whereClause += ' AND n.is_published = 1'
+    }
 
     if (search) {
       whereClause += ' AND (n.title LIKE ? OR n.content LIKE ?)'
@@ -57,7 +49,6 @@ export async function GET(request: NextRequest) {
       data: result.data,
       pagination: result.pagination
     })
-    */
   } catch (error) {
     console.error('Error fetching news:', error)
     return NextResponse.json(

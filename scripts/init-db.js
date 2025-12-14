@@ -213,6 +213,37 @@ const createTables = () => {
     )
   `);
 
+  // 新闻分类表
+  db.exec(`
+    CREATE TABLE news_categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      description TEXT,
+      sort_order INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // 新闻表
+  db.exec(`
+    CREATE TABLE news (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      summary TEXT,
+      cover_image TEXT,
+      category_id INTEGER,
+      author_id INTEGER,
+      view_count INTEGER DEFAULT 0,
+      is_published INTEGER DEFAULT 0,
+      published_at DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (category_id) REFERENCES news_categories(id) ON DELETE SET NULL,
+      FOREIGN KEY (author_id) REFERENCES profiles(id) ON DELETE SET NULL
+    )
+  `);
+
   console.log('✓ 创建表结构');
 };
 
@@ -366,7 +397,7 @@ const generateTestData = async () => {
       spots[i].category_id || (i % 5) + 1, // 循环分配分类
       spots[i].price || Math.floor(Math.random() * 200) + 20, // 随机价格
       spots[i].rating || (Math.random() * 1 + 4).toFixed(1), // 4.0-5.0的随机评分
-      spots[i].is_recommended || (Math.random() > 0.5 ? 1 : 0), // 随机推荐
+      spots[i].is_recommended !== undefined ? spots[i].is_recommended : (i < 6 ? 1 : 0), // 前6个设为推荐
       spots[i].view_count || Math.floor(Math.random() * 100000) + 10000 // 随机浏览量
     );
     // 添加数据库生成的ID到spot对象
@@ -743,47 +774,203 @@ const generateCartData = () => {
     );
   });
   console.log('✓ 生成购物车数据');
+
+  // 10. 生成新闻分类数据
+  const newsCategories = [
+    { name: '旅游资讯', description: '最新旅游行业动态和资讯', sort_order: 1 },
+    { name: '景点推荐', description: '精选景点推荐和游记分享', sort_order: 2 },
+    { name: '旅游攻略', description: '实用旅游攻略和出行指南', sort_order: 3 },
+    { name: '特色美食', description: '各地特色美食推荐', sort_order: 4 },
+    { name: '酒店住宿', description: '酒店住宿体验和推荐', sort_order: 5 }
+  ];
+
+  const newsCategoryStmt = db.prepare(`
+    INSERT INTO news_categories (name, description, sort_order)
+    VALUES (?, ?, ?)
+  `);
+
+  newsCategories.forEach(category => {
+    newsCategoryStmt.run(category.name, category.description, category.sort_order);
+  });
+  console.log('✓ 生成新闻分类数据');
+
+  // 11. 生成新闻数据
+  const newsData = [
+    {
+      id: `news_${Date.now()}_1`,
+      title: '2024春节旅游高峰即将到来，热门景点提前预订',
+      summary: '春节假期临近，全国各大旅游景点迎来预订高峰。建议游客提前规划行程，预订门票和住宿。',
+      content: `<p>随着2024年春节假期的临近，全国各大旅游景点即将迎来客流高峰。据统计，今年春节期间，预计有超过3亿人次选择出游。</p>
+<p>故宫博物院、长城、西湖等热门景点的门票预订量已超过往年同期。为确保游览体验，建议游客提前做好行程规划，通过官方渠道预订门票。</p>
+<p>此外，各大酒店和民宿的预订也进入旺季。热门旅游城市如北京、杭州、西安的住宿价格有所上涨，建议游客尽早预订。</p>`,
+      cover_image: '/assets/images/spots/gugong.jpg',
+      category_id: 1,
+      author_id: 1,
+      view_count: 1250,
+      is_published: 1,
+      published_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: `news_${Date.now()}_2`,
+      title: '九寨沟春季限时开放，错过再等一年',
+      summary: '九寨沟景区宣布春季限时开放政策，每日限流8000人。游客需提前在线预约购票。',
+      content: `<p>四川九寨沟景区管理局宣布，今年春季将实施限时开放政策，以更好地保护生态环境。</p>
+<p>开放时间为3月1日至5月31日，每日限流8000人。游客必须提前通过官方网站或小程序预约购票，现场不售票。</p>
+<p>九寨沟以其独特的高原湖泊和彩林景观闻名，春季时节，冰雪消融，瀑布水量充沛，是最佳游览季节之一。</p>`,
+      cover_image: '/assets/images/spots/jiuzhaigou.jpg',
+      category_id: 2,
+      author_id: 1,
+      view_count: 2100,
+      is_published: 1,
+      published_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: `news_${Date.now()}_3`,
+      title: '西湖游船推出夜游项目，体验不一样的江南水乡',
+      summary: '杭州西湖风景区推出全新夜游项目，游客可乘坐画舫欣赏西湖夜景，感受江南水乡的独特魅力。',
+      content: `<p>为了丰富游客的游览体验，杭州西湖风景区近日推出了全新的夜游项目。</p>
+<p>游客可以乘坐传统画舫，在夜幕下游览西湖，欣赏灯光映衬下的断桥、雷峰塔等景点。项目每晚7点至9点运营，票价55元/人。</p>
+<p>据景区负责人介绍，夜游项目采用了环保灯光设计，既能展现西湖夜景之美，又不会对生态环境造成影响。</p>`,
+      cover_image: '/assets/images/spots/xihu.jpg',
+      category_id: 2,
+      author_id: 1,
+      view_count: 1580,
+      is_published: 1,
+      published_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: `news_${Date.now()}_4`,
+      title: '黄山云海奇观再现，摄影爱好者纷纷前往',
+      summary: '近日黄山出现壮观云海景象，吸引众多摄影爱好者和游客前往观赏。气象部门预测未来一周仍有机会看到云海。',
+      content: `<p>受冷空气影响，黄山风景区近日出现了壮观的云海景象。云雾在山峰间翻涌，如梦如幻，美不胜收。</p>
+<p>据黄山气象站工作人员介绍，这次云海形成条件极佳，能见度高，是近年来难得一见的奇观。许多摄影爱好者早早上山占据有利位置，记录下这一美景。</p>
+<p>气象部门预测，未来一周黄山仍有机会出现云海景观，建议有兴趣的游客密切关注天气预报，选择合适的时间前往。</p>`,
+      cover_image: '/assets/images/spots/huangshan.jpg',
+      category_id: 1,
+      author_id: 1,
+      view_count: 1890,
+      is_published: 1,
+      published_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: `news_${Date.now()}_5`,
+      title: '桂林漓江竹筏游全新升级，增设讲解服务',
+      summary: '桂林漓江景区对竹筏游项目进行升级改造，增加了专业讲解服务和安全设施，提升游客体验。',
+      content: `<p>桂林漓江风景区近期完成了竹筏游项目的升级改造，为游客提供更优质的服务体验。</p>
+<p>新的竹筏配备了舒适的座椅和遮阳设施，并增设了专业讲解员，为游客详细介绍沿途的自然景观和人文历史。</p>
+<p>此外，景区还加强了安全管理，所有竹筏都配备了救生设备，确保游客的安全。升级后的竹筏游票价保持不变，仍为118元/人。</p>`,
+      cover_image: '/assets/images/spots/guilin.jpg',
+      category_id: 2,
+      author_id: 1,
+      view_count: 1320,
+      is_published: 1,
+      published_at: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: `news_${Date.now()}_6`,
+      title: '丽江古城推出"慢游"路线，深度体验纳西文化',
+      summary: '丽江古��推出全新的"慢游"主题路线，让游客放慢脚步，深度体验纳西族的传统文化和生活方式。',
+      content: `<p>为了让游客更好地感受丽江古城的文化底蕴，景区推出了"慢游丽江"主题路线。</p>
+<p>该路线避开了热门的商业街区，带领游客走进古城的深巷小院，参观纳西族传统民居，学习东巴文字，体验手工艺制作。</p>
+<p>路线全程约3小时，配有专业导游讲解。游客还可以在当地居民家中品尝正宗的纳西美食，感受最地道的丽江生活。</p>`,
+      cover_image: '/assets/images/spots/lijiang.jpg',
+      category_id: 3,
+      author_id: 1,
+      view_count: 980,
+      is_published: 1,
+      published_at: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: `news_${Date.now()}_7`,
+      title: '户外露营成新趋势，这些装备你准备好了吗？',
+      summary: '随着露营旅游的兴起，越来越多的人选择走进大自然。本文为您推荐户外露营必备装备清单。',
+      content: `<p>近年来，户外露营成为了新兴的旅游方式，受到年轻人的热烈追捧。</p>
+<p>选择露营地点时，建议优先考虑有完善设施的正规营地。必备装备包括：帐篷、睡袋、防潮垫、照明设备、炊具等。</p>
+<p>此外，还要准备急救包、防虫喷雾等应急物品。建议新手先从设施完善的营地开始体验，积累经验后再尝试更具挑战性的野外露营。</p>`,
+      cover_image: '/assets/images/activities/camping.jpg',
+      category_id: 3,
+      author_id: 1,
+      view_count: 2340,
+      is_published: 1,
+      published_at: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: `news_${Date.now()}_8`,
+      title: '登山爱好者必看：春季登山注意事项',
+      summary: '春季是登山的好时节，但也要注意安全。本文为您总结春季登山的注意事项和安全提示。',
+      content: `<p>春季气候宜人，是登山的绝佳时节。但春季天气变化较大，登山时需要特别注意以下几点：</p>
+<p>1. 做好充分准备，携带足够的水和食物；2. 穿着合适的登山鞋和速干衣物；3. 注意天气变化，避免在雨雾天气登山；4. 结伴而行，不要单独行动。</p>
+<p>对于初学者，建议选择难度较低、设施完善的登山路线，积累经验后再挑战更高难度的山峰。</p>`,
+      cover_image: '/assets/images/activities/mountain.jpg',
+      category_id: 3,
+      author_id: 1,
+      view_count: 1650,
+      is_published: 1,
+      published_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString()
+    }
+  ];
+
+  const newsStmt = db.prepare(`
+    INSERT INTO news (id, title, content, summary, cover_image, category_id, author_id, view_count, is_published, published_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  newsData.forEach(news => {
+    newsStmt.run(
+      news.id,
+      news.title,
+      news.content,
+      news.summary,
+      news.cover_image,
+      news.category_id,
+      news.author_id,
+      news.view_count,
+      news.is_published,
+      news.published_at
+    );
+  });
+  console.log('✓ 生成新闻数据');
 };
 
 // 10. 添加更多景点和酒店数据（供管理）
 const addMoreData = () => {
-  // 添加更多景点
+  // 添加更多景点（使用本地图片）
   const moreSpots = [
     {
-      name: '张家界国家森林公园',
-      description: '中国第一个国家森林公园，以峰称奇、以谷显幽、以林见秀。',
-      location: '湖南省张家界市武陵源区',
-      latitude: 29.3170,
-      longitude: 110.4793,
+      name: '西安古城',
+      description: '十三朝古都，拥有兵马俑、大雁塔、古城墙等众多历史遗迹。',
+      location: '陕西省西安市',
+      latitude: 34.3416,
+      longitude: 108.9398,
       images: [
-        'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800'
+        '/assets/images/spots/xian.jpg'
       ]
     },
     {
-      name: '九寨沟',
-      description: '世界自然遗产、国家重点风景名胜区、国家AAAAA级旅游景区。',
-      location: '四川省阿坝藏族羌族自治州九寨沟县',
-      latitude: 33.2599,
-      longitude: 103.9240,
+      name: '上海迪士尼乐园',
+      description: '中国大陆首座迪士尼度假区，拥有多个主题园区和娱乐设施。',
+      location: '上海市浦东新区',
+      latitude: 31.1434,
+      longitude: 121.6661,
       images: [
-        'https://images.unsplash.com/photo-1594989844338-e8a5446286f2?w=800'
+        '/assets/images/spots/disney.jpg'
       ]
     },
     {
-      name: '桂林山水',
-      description: '桂林山水甲天下，典型的喀斯特地形造就了甲天下的桂林山水。',
-      location: '广西壮族自治区桂林市',
-      latitude: 25.2744,
-      longitude: 110.2992,
+      name: '泰山',
+      description: '五岳之首，世界文化与自然双重遗产，中国著名的道教圣地。',
+      location: '山东省泰安市',
+      latitude: 36.2544,
+      longitude: 117.1014,
       images: [
-        'https://images.unsplash.com/photo-1505219910884-28e2d00546b1?w=800'
+        '/assets/images/spots/backup1.jpg'
       ]
     }
   ];
 
   const moreSpotStmt = db.prepare(`
-    INSERT INTO spots (name, description, location, latitude, longitude, images, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO spots (name, description, location, latitude, longitude, images, status, is_recommended, category_id, price, rating, view_count)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   moreSpots.forEach((spot, index) => {
@@ -794,7 +981,12 @@ const addMoreData = () => {
       spot.latitude,
       spot.longitude,
       JSON.stringify(spot.images),
-      Math.random() > 0.2 ? 'active' : 'inactive' // 随机设置状态
+      'active', // 都设置为活跃状态
+      1, // 都设置为推荐景点
+      (index % 5) + 1, // 循环分配分类
+      Math.floor(Math.random() * 200) + 20, // 随机价格
+      (Math.random() * 1 + 4).toFixed(1), // 4.0-5.0的随机评分
+      Math.floor(Math.random() * 100000) + 10000 // 随机浏览量
     );
   });
 

@@ -1,6 +1,7 @@
 import { NewsList } from "@/components/news/news-list"
 import { NewsFilter } from "@/components/news/news-filter"
 import type { News } from "@/lib/types"
+import { dbQuery } from "@/lib/db-utils"
 
 export default async function NewsPage({
   searchParams,
@@ -9,9 +10,36 @@ export default async function NewsPage({
 }) {
   const params = await searchParams
 
-  // news 和 news_categories 表不存在，暂时返回空数据
-  const categories: any[] = []
-  const news: News[] = []
+  // 获取新闻分类
+  const categories = dbQuery(`
+    SELECT * FROM news_categories
+    ORDER BY sort_order ASC
+  `)
+
+  // 构建查询条件
+  let whereClause = 'WHERE n.is_published = 1'
+  const queryParams: any[] = []
+
+  if (params.search) {
+    whereClause += ' AND (n.title LIKE ? OR n.content LIKE ?)'
+    queryParams.push(`%${params.search}%`, `%${params.search}%`)
+  }
+
+  if (params.category_id) {
+    whereClause += ' AND n.category_id = ?'
+    queryParams.push(params.category_id)
+  }
+
+  // 获取新闻列表
+  const news: News[] = dbQuery(`
+    SELECT n.*, nc.name as category_name, p.full_name as author_name
+    FROM news n
+    LEFT JOIN news_categories nc ON n.category_id = nc.id
+    LEFT JOIN profiles p ON n.author_id = p.id
+    ${whereClause}
+    ORDER BY n.published_at DESC
+    LIMIT 20
+  `, queryParams)
 
   return (
     <div className="container mx-auto px-4 py-8">

@@ -38,13 +38,17 @@ export default async function HomePage() {
     images: activity.images ? JSON.parse(activity.images) : [],
   }))
 
-  // 获取新闻
-  const news = dbQuery<News>(`
-    SELECT * FROM news
-    WHERE is_published = 1
-    ORDER BY published_at DESC
+  // 获取最新新闻
+  const newsRaw = dbQuery(`
+    SELECT n.*, nc.name as category_name
+    FROM news n
+    LEFT JOIN news_categories nc ON n.category_id = nc.id
+    WHERE n.is_published = 1
+    ORDER BY n.published_at DESC
     LIMIT 3
   `)
+
+  const news: News[] = newsRaw
 
   return (
     <div className="flex flex-col">
@@ -228,7 +232,7 @@ export default async function HomePage() {
                     <div className="relative h-52 overflow-hidden">
                       <img
                         src={activity.images?.[0] || "/placeholder.svg?height=200&width=400&query=travel activity"}
-                        alt={activity.name}
+                        alt={activity.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                       {activity.activity_type && (
@@ -239,7 +243,7 @@ export default async function HomePage() {
                     </div>
                     <CardContent className="p-4">
                       <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                        {activity.name}
+                        {activity.title}
                       </h3>
                       <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
                         <MapPin className="h-3.5 w-3.5" />

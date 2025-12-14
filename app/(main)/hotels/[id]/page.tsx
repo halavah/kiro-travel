@@ -30,7 +30,7 @@ export default async function HotelDetailPage({
     `
     SELECT * FROM hotel_rooms
     WHERE hotel_id = ? AND status = 'active'
-    ORDER BY price ASC
+    ORDER BY price_per_night ASC
   `,
     [id],
   )

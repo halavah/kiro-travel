@@ -103,13 +103,17 @@ echo ""
 echo -e "${YELLOW}其他:${NC}"
 echo " 14) 代码检查 (lint)"
 echo " 15) 类型检查 (tsc)"
-echo "  0) 退出"
+echo ""
+echo -e "${YELLOW}部署:${NC}"
+echo "  0) 部署 (deploy) - Git 提交并推送"
+echo ""
+echo " 99) 退出"
 echo ""
 echo -e "${BLUE}========================================${NC}"
 
 # Read user input with default value
-read -p "请输入序号 (默认: 2): " choice
-choice=${choice:-2}
+read -p "请输入序号 (默认: 0): " choice
+choice=${choice:-0}
 
 # Execute corresponding command
 case $choice in
@@ -204,12 +208,136 @@ EOF
         npx tsc --noEmit
         ;;
     0)
+        echo -e "${BLUE}========================================${NC}"
+        echo -e "${GREEN}  Git 部署流程${NC}"
+        echo -e "${BLUE}========================================${NC}"
+        echo ""
+
+        # Get current branch name
+        echo -e "${YELLOW}检测当前 Git 分支...${NC}"
+        current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+        if [ -z "$current_branch" ]; then
+            echo -e "${RED}未能检测到 Git 分支。${NC}"
+            echo -e "${RED}请确保当前目录是 Git 仓库。${NC}"
+            exit 1
+        fi
+        echo -e "${GREEN}当前分支: $current_branch${NC}"
+        echo ""
+
+        # Stage all changes first
+        echo -e "${YELLOW}暂存所有更改...${NC}"
+        git add .
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}暂存失败。${NC}"
+            exit 1
+        fi
+
+        # Check if there are changes to commit
+        git diff --staged --quiet
+        if [ $? -eq 0 ]; then
+            echo -e "${YELLOW}没有需要提交的更改。${NC}"
+            echo ""
+            echo -e "${YELLOW}拉取远程最新更改...${NC}"
+            git pull origin "$current_branch"
+            exit 0
+        fi
+
+        # Commit changes with timestamped message
+        timestamp=$(date +"%Y%m%d_%H%M%S")
+        echo -e "${YELLOW}提交更改，时间戳: $timestamp...${NC}"
+        git commit -m "$timestamp"
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}提交失败。${NC}"
+            exit 1
+        fi
+
+        # Pull latest changes from the remote repository
+        echo -e "${YELLOW}拉取远程最新更改...${NC}"
+        git pull origin "$current_branch"
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}拉取失败。如有冲突请解决后重新运行。${NC}"
+            exit 1
+        fi
+
+        # Push changes to the repository
+        echo -e "${YELLOW}推送更改到远程仓库...${NC}"
+        git push origin "$current_branch"
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}推送失败。${NC}"
+            exit 1
+        fi
+
+        echo ""
+        echo -e "${GREEN}✓ 更改已成功提交并推送到分支: $current_branch${NC}"
+        ;;
+    99)
         echo -e "${GREEN}退出脚本${NC}"
         exit 0
         ;;
     *)
         echo -e "${RED}无效选择！${NC}"
-        echo -e "${YELLOW}默认执行完整重启...${NC}"
-        full_restart
+        echo -e "${YELLOW}默认执行部署...${NC}"
+        # Execute deploy (same as option 0)
+        echo -e "${BLUE}========================================${NC}"
+        echo -e "${GREEN}  Git 部署流程${NC}"
+        echo -e "${BLUE}========================================${NC}"
+        echo ""
+
+        # Get current branch name
+        echo -e "${YELLOW}检测当前 Git 分支...${NC}"
+        current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+        if [ -z "$current_branch" ]; then
+            echo -e "${RED}未能检测到 Git 分支。${NC}"
+            echo -e "${RED}请确保当前目录是 Git 仓库。${NC}"
+            exit 1
+        fi
+        echo -e "${GREEN}当前分支: $current_branch${NC}"
+        echo ""
+
+        # Stage all changes first
+        echo -e "${YELLOW}暂存所有更改...${NC}"
+        git add .
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}暂存失败。${NC}"
+            exit 1
+        fi
+
+        # Check if there are changes to commit
+        git diff --staged --quiet
+        if [ $? -eq 0 ]; then
+            echo -e "${YELLOW}没有需要提交的更改。${NC}"
+            echo ""
+            echo -e "${YELLOW}拉取远程最新更改...${NC}"
+            git pull origin "$current_branch"
+            exit 0
+        fi
+
+        # Commit changes with timestamped message
+        timestamp=$(date +"%Y%m%d_%H%M%S")
+        echo -e "${YELLOW}提交更改，时间戳: $timestamp...${NC}"
+        git commit -m "$timestamp"
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}提交失败。${NC}"
+            exit 1
+        fi
+
+        # Pull latest changes from the remote repository
+        echo -e "${YELLOW}拉取远程最新更改...${NC}"
+        git pull origin "$current_branch"
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}拉取失败。如有冲突请解决后重新运行。${NC}"
+            exit 1
+        fi
+
+        # Push changes to the repository
+        echo -e "${YELLOW}推送更改到远程仓库...${NC}"
+        git push origin "$current_branch"
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}推送失败。${NC}"
+            exit 1
+        fi
+
+        echo ""
+        echo -e "${GREEN}✓ 更改已成功提交并推送到分支: $current_branch${NC}"
         ;;
 esac

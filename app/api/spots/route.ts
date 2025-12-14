@@ -32,18 +32,16 @@ export async function GET(request: NextRequest) {
       whereClause += ' AND s.is_recommended = 1'
     }
 
+    // spot_likes, spot_favorites, spot_comments 表不存在，暂时移除这些关联查询
     const sql = `
       SELECT
         s.*,
         sc.name as category_name,
-        COUNT(DISTINCT sl.id) as like_count,
-        COUNT(DISTINCT sf.id) as favorite_count,
-        IFNULL(AVG(sco.rating), 0) as average_rating
+        0 as like_count,
+        0 as favorite_count,
+        0 as average_rating
       FROM spots s
       LEFT JOIN spot_categories sc ON s.category_id = sc.id
-      LEFT JOIN spot_likes sl ON s.id = sl.spot_id
-      LEFT JOIN spot_favorites sf ON s.id = sf.spot_id
-      LEFT JOIN spot_comments sco ON s.id = sco.spot_id
       ${whereClause}
       GROUP BY s.id
       ORDER BY s.created_at DESC
