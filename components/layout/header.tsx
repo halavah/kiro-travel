@@ -163,7 +163,7 @@ export function Header() {
                   <DropdownMenuItem asChild>
                     <Link href="/admin" className="cursor-pointer">
                       <Compass className="mr-2 h-4 w-4" />
-                      管理仪表板
+                      仪表板
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -337,7 +337,7 @@ export function Header() {
                   className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
                 >
                   <Compass className="h-4 w-4" />
-                  管理仪表板
+                  仪表板
                 </Link>
                 <Link
                   href="/admin/users"
