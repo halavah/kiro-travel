@@ -14,6 +14,7 @@ import { Search, Plus, Edit, Trash2, Star, MapPin, Phone, Power } from "lucide-r
 import { toast } from "sonner"
 import Image from 'next/image'
 import MultiImageUpload from '@/components/admin/MultiImageUpload'
+import Pagination from '@/components/admin/Pagination'
 
 interface Hotel {
   id: string
@@ -36,6 +37,8 @@ export default function AdminHotelsPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [editingHotel, setEditingHotel] = useState<Hotel | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(10)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -63,6 +66,7 @@ export default function AdminHotelsPage() {
 
       const data = await res.json()
       setHotels(data.hotels || [])
+      setCurrentPage(1) // 重置到第一页
     } catch (error) {
       console.error('Error fetching hotels:', error)
       toast.error('获取酒店列表失败')
@@ -221,6 +225,12 @@ export default function AdminHotelsPage() {
     }
     return true
   })
+
+  // 分页逻辑
+  const totalPages = Math.ceil(filteredHotels.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedHotels = filteredHotels.slice(startIndex, endIndex)
 
   if (loading) {
     return (
@@ -460,7 +470,7 @@ export default function AdminHotelsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredHotels.map((hotel) => (
+              {paginatedHotels.map((hotel) => (
                 <TableRow key={hotel.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -545,6 +555,13 @@ export default function AdminHotelsPage() {
               暂无酒店数据
             </div>
           )}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            itemsPerPage={itemsPerPage}
+            totalItems={filteredHotels.length}
+          />
         </CardContent>
       </Card>
     </div>

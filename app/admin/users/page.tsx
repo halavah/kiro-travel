@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Search, Mail, Shield, Calendar, Eye } from "lucide-react"
 import Link from "next/link"
+import Pagination from '@/components/admin/Pagination'
 
 interface User {
   id: string
@@ -30,6 +31,8 @@ export default function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState('all')
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(10)
 
   const fetchUsers = async () => {
     try {
@@ -47,6 +50,7 @@ export default function AdminUsersPage() {
 
       const data = await res.json()
       setUsers(data.users || [])
+      setCurrentPage(1) // 重置到第一页
     } catch (error) {
       console.error('Error fetching users:', error)
     } finally {
@@ -96,6 +100,12 @@ export default function AdminUsersPage() {
     }
     return true
   })
+
+  // 分页逻辑
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex)
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('zh-CN', {
@@ -173,7 +183,7 @@ export default function AdminUsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.map((user) => (
+              {paginatedUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -233,6 +243,13 @@ export default function AdminUsersPage() {
               暂无用户数据
             </div>
           )}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            itemsPerPage={itemsPerPage}
+            totalItems={filteredUsers.length}
+          />
         </CardContent>
       </Card>
 

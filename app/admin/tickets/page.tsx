@@ -10,9 +10,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Search, Plus, Edit, Trash2, Eye } from "lucide-react"
+import { Search, Plus, Edit, Trash2, Eye, Power } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
+import Pagination from '@/components/admin/Pagination'
 
 interface Ticket {
   id: string
@@ -36,6 +37,8 @@ export default function AdminTicketsPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [editingTicket, setEditingTicket] = useState<Ticket | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(10)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -63,6 +66,7 @@ export default function AdminTicketsPage() {
 
       const data = await res.json()
       setTickets(data.tickets || [])
+      setCurrentPage(1) // 重置到第一页
     } catch (error) {
       console.error('Error fetching tickets:', error)
       toast.error('获取门票列表失败')
@@ -170,10 +174,37 @@ export default function AdminTicketsPage() {
         throw new Error(error.error || '删除失败')
       }
 
-      toast.success('门票删除成功')
+      toast.success('门票删���成功')
       fetchTickets()
     } catch (error: any) {
       toast.error(error.message || '删除失败')
+    }
+  }
+
+  const handleToggleStatus = async (ticketId: string, currentStatus: 'active' | 'inactive') => {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active'
+    const statusText = newStatus === 'active' ? '上架' : '下架'
+
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch(`/api/admin/tickets/${ticketId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || '状态更新失败')
+      }
+
+      toast.success(`门票已${statusText}`)
+      fetchTickets()
+    } catch (error: any) {
+      toast.error(error.message || '状态更新失败')
     }
   }
 
@@ -188,6 +219,12 @@ export default function AdminTicketsPage() {
     }
     return true
   })
+
+  // 分页逻辑
+  const totalPages = Math.ceil(filteredTickets.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedTickets = filteredTickets.slice(startIndex, endIndex)
 
   if (loading) {
     return (
@@ -399,7 +436,7 @@ export default function AdminTicketsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTickets.map((ticket) => (
+              {paginatedTickets.map((ticket) => (
                 <TableRow key={ticket.id}>
                   <TableCell className="font-medium">{ticket.name}</TableCell>
                   <TableCell>
@@ -427,6 +464,14 @@ export default function AdminTicketsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleToggleStatus(ticket.id, ticket.status)}
+                        title={ticket.status === 'active' ? '下架' : '上架'}
+                      >
+                        <Power className={`h-4 w-4 ${ticket.status === 'active' ? 'text-green-600' : 'text-gray-400'}`} />
+                      </Button>
                       <Button variant="ghost" size="sm" onClick={() => handleEdit(ticket)}>
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -444,6 +489,13 @@ export default function AdminTicketsPage() {
               暂无门票数据
             </div>
           )}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            itemsPerPage={itemsPerPage}
+            totalItems={filteredTickets.length}
+          />
         </CardContent>
       </Card>
     </div>

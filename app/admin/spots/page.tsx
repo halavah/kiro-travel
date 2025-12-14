@@ -15,6 +15,7 @@ import Link from "next/link"
 import { toast } from "sonner"
 import Image from 'next/image'
 import MultiImageUpload from '@/components/admin/MultiImageUpload'
+import Pagination from '@/components/admin/Pagination'
 
 interface Spot {
   id: string
@@ -40,6 +41,8 @@ export default function AdminSpotsPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [editingSpot, setEditingSpot] = useState<Spot | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(10)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -68,6 +71,7 @@ export default function AdminSpotsPage() {
 
       const data = await res.json()
       setSpots(data.spots || [])
+      setCurrentPage(1) // 重置到第一页
     } catch (error) {
       console.error('Error fetching spots:', error)
       toast.error('获取景点列表失败')
@@ -238,6 +242,12 @@ export default function AdminSpotsPage() {
     }
     return true
   })
+
+  // 分页逻辑
+  const totalPages = Math.ceil(filteredSpots.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedSpots = filteredSpots.slice(startIndex, endIndex)
 
   if (loading) {
     return (
@@ -453,7 +463,7 @@ export default function AdminSpotsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredSpots.map((spot) => (
+              {paginatedSpots.map((spot) => (
                 <TableRow key={spot.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -530,6 +540,13 @@ export default function AdminSpotsPage() {
               暂无景点数据
             </div>
           )}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            itemsPerPage={itemsPerPage}
+            totalItems={filteredSpots.length}
+          />
         </CardContent>
       </Card>
     </div>

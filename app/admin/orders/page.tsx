@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Clock, CheckCircle2, XCircle, Package, Search, Eye } from "lucide-react"
 import Link from "next/link"
+import Pagination from '@/components/admin/Pagination'
 
 interface Order {
   id: string
@@ -34,6 +35,8 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(10)
 
   const fetchOrders = async () => {
     try {
@@ -50,6 +53,7 @@ export default function AdminOrdersPage() {
 
       const data = await res.json()
       setOrders(data.orders || [])
+      setCurrentPage(1) // 重置到第一页
     } catch (error) {
       console.error('Error fetching orders:', error)
     } finally {
@@ -66,12 +70,18 @@ export default function AdminOrdersPage() {
       const searchLower = searchTerm.toLowerCase()
       return (
         order.order_no.toLowerCase().includes(searchLower) ||
-        order.full_name?.toLowerCase().includes(searchLower) ||
+        order.username?.toLowerCase().includes(searchLower) ||
         order.email?.toLowerCase().includes(searchLower)
       )
     }
     return true
   })
+
+  // 分页逻辑
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedOrders = filteredOrders.slice(startIndex, endIndex)
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('zh-CN', {
@@ -151,7 +161,7 @@ export default function AdminOrdersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredOrders.map((order) => {
+              {paginatedOrders.map((order) => {
                 const StatusIcon = statusConfig[order.status].icon
                 return (
                   <TableRow key={order.id}>
@@ -188,6 +198,13 @@ export default function AdminOrdersPage() {
               暂无订单数据
             </div>
           )}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            itemsPerPage={itemsPerPage}
+            totalItems={filteredOrders.length}
+          />
         </CardContent>
       </Card>
     </div>
