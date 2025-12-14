@@ -49,10 +49,11 @@ export async function GET(request: NextRequest) {
 
     const result = paginate(sql, page, limit, params)
 
-    // 解析 images JSON 字段
+    // 解析 images JSON 字段并格式化数据
     const spotsWithParsedImages = result.data.map((spot: any) => ({
       ...spot,
       images: spot.images ? JSON.parse(spot.images) : [],
+      category: spot.category_name ? { name: spot.category_name } : null
     }))
 
     return NextResponse.json({

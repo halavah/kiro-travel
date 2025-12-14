@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
 
     const totalRevenue = dbGet(`
       SELECT COALESCE(SUM(total_amount), 0) as total FROM orders
-      WHERE status = 'paid'
+      WHERE status IN ('paid', 'completed')
     `)?.total || 0
 
     const totalSpots = dbGet(`
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
 
     const prevRevenue = dbGet(`
       SELECT COALESCE(SUM(total_amount), 0) as total FROM orders
-      WHERE status = 'paid' AND created_at < ?
+      WHERE status IN ('paid', 'completed') AND created_at < ?
     `, [startDateStr])?.total || 0
 
     const growthRates = {
@@ -111,7 +111,7 @@ export async function GET(req: NextRequest) {
       LEFT JOIN tickets t ON s.id = t.spot_id
       LEFT JOIN order_items oi ON t.id = oi.ticket_id
       LEFT JOIN orders o ON oi.order_id = o.id
-      WHERE o.status = 'paid' AND o.created_at >= ?
+      WHERE o.status IN ('paid', 'completed') AND o.created_at >= ?
       GROUP BY s.id
       ORDER BY orders DESC
       LIMIT 10
@@ -128,7 +128,7 @@ export async function GET(req: NextRequest) {
       LEFT JOIN spots s ON t.spot_id = s.id
       LEFT JOIN order_items oi ON t.id = oi.ticket_id
       LEFT JOIN orders o ON oi.order_id = o.id
-      WHERE o.status = 'paid' AND o.created_at >= ?
+      WHERE o.status IN ('paid', 'completed') AND o.created_at >= ?
       GROUP BY t.id
       ORDER BY sold DESC
       LIMIT 10

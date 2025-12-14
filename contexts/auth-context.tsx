@@ -6,6 +6,7 @@ interface User {
   id: number
   email: string
   full_name: string
+  nickname?: string
   role: 'user' | 'guide' | 'admin'
   avatar_url?: string
 }
@@ -46,12 +47,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json()
         if (data.success) {
           setUser(data.data.user)
-          // token 存储在 httpOnly cookie 中，我们不需要在客户端保存
-          setToken('cookie-based') // 标记为 cookie 认证
+          // 如果 localStorage 有 token，使用它；否则标记为 cookie 认证
+          const storedToken = localStorage.getItem('token')
+          setToken(storedToken || 'cookie-based')
         }
       } else {
         setUser(null)
         setToken(null)
+        localStorage.removeItem('token')
       }
     } catch (error) {
       console.error('Error fetching current user:', error)
@@ -75,8 +78,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data.success) {
         setUser(data.data.user)
-        setToken('cookie-based') // 标记为 cookie 认证
-        // Cookie 已由服务器设置，不需要 localStorage
+        setToken(data.data.token)
+        // 同时存储到 localStorage 供管理后台使用
+        localStorage.setItem('token', data.data.token)
         return { success: true }
       } else {
         return { success: false, error: data.error }
@@ -107,8 +111,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data.success) {
         setUser(data.data.user)
-        setToken('cookie-based') // 标记为 cookie 认证
-        // Cookie 已由服务器设置，不需要 localStorage
+        setToken(data.data.token)
+        // 同时存储到 localStorage 供管理后台使用
+        localStorage.setItem('token', data.data.token)
         return { success: true }
       } else {
         return { success: false, error: data.error }
@@ -132,6 +137,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setUser(null)
     setToken(null)
+    // 清除 localStorage 中的 token
+    localStorage.removeItem('token')
+
+    // 跳转到主页
+    window.location.href = '/'
   }
 
   return (
