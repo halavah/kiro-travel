@@ -22,36 +22,39 @@ export default function MultiImageUpload({
   minImages = 0,
   maxImages = 10
 }: MultiImageUploadProps) {
+  // Ensure value is always an array
+  const imageValues = value || ['']
+
   const handleImageChange = (index: number, url: string) => {
-    const newImages = [...value]
+    const newImages = [...imageValues]
     newImages[index] = url
     onChange(newImages)
   }
 
   const handleAddImage = () => {
-    if (value.length < maxImages) {
-      onChange([...value, ''])
+    if (imageValues.length < maxImages) {
+      onChange([...imageValues, ''])
     }
   }
 
   const handleRemoveImage = (index: number) => {
-    if (value.length > minImages) {
-      const newImages = value.filter((_, i) => i !== index)
+    if (imageValues.length > minImages) {
+      const newImages = imageValues.filter((_, i) => i !== index)
       onChange(newImages.length === 0 ? [''] : newImages)
     }
   }
 
   return (
     <div className="space-y-4">
-      {value.map((img, index) => (
+      {imageValues.map((img, index) => (
         <div key={index} className="relative">
           <ImageUpload
-            label={value.length > 1 ? `图片 ${index + 1}` : label}
+            label={imageValues.length > 1 ? `图片 ${index + 1}` : label}
             value={img}
             onChange={(url) => handleImageChange(index, url)}
             required={required && index === 0}
           />
-          {value.length > 1 && (
+          {imageValues.length > 1 && (
             <Button
               type="button"
               variant="ghost"
@@ -66,7 +69,7 @@ export default function MultiImageUpload({
         </div>
       ))}
 
-      {value.length < maxImages && (
+      {imageValues.length < maxImages && (
         <Button
           type="button"
           variant="outline"
