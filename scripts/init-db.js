@@ -244,6 +244,47 @@ const createTables = () => {
     )
   `);
 
+  // 景点评论表
+  db.exec(`
+    CREATE TABLE spot_comments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      spot_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      content TEXT NOT NULL,
+      rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (spot_id) REFERENCES spots(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+    )
+  `);
+
+  // 景点点赞表
+  db.exec(`
+    CREATE TABLE spot_likes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      spot_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (spot_id) REFERENCES spots(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE,
+      UNIQUE(spot_id, user_id)
+    )
+  `);
+
+  // 景点收藏表
+  db.exec(`
+    CREATE TABLE spot_favorites (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      spot_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (spot_id) REFERENCES spots(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE,
+      UNIQUE(spot_id, user_id)
+    )
+  `);
+
   console.log('✓ 创建表结构');
 };
 

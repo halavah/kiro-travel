@@ -27,12 +27,12 @@ export default function LoginPage() {
     const result = await login(email, password)
 
     if (result.success) {
-      router.push('/')
+      // 使用完整页面刷新来确保所有状态更新
+      window.location.href = '/'
     } else {
       setError(result.error || '登录失败')
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   return (
