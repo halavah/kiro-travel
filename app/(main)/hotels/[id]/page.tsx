@@ -29,7 +29,7 @@ export default async function HotelDetailPage({
   const roomsRaw = dbQuery(
     `
     SELECT * FROM hotel_rooms
-    WHERE hotel_id = ? AND status = 'active'
+    WHERE hotel_id = ? AND status = 'available'
     ORDER BY price_per_night ASC
   `,
     [id],
