@@ -204,13 +204,16 @@ export default function AdminNewsPage() {
         })
       })
 
-      if (!res.ok) throw new Error('Failed to toggle publish status')
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.details || data.error || 'Failed to toggle publish status')
+      }
 
       toast.success(`新闻已${currentPublished ? '取消发布' : '发布'}`)
       fetchNews()
     } catch (error) {
       console.error('Error toggling publish status:', error)
-      toast.error('状态切换失败')
+      toast.error(error instanceof Error ? error.message : '状态切换失败')
     }
   }
 

@@ -67,8 +67,34 @@ export async function PUT(
     const body = await request.json()
     const { title, content, summary, cover_image, category_id, is_published } = body
 
+    console.log('[News Update] Request body:', {
+      id,
+      title,
+      content: content?.substring(0, 50),
+      summary,
+      cover_image,
+      category_id,
+      is_published,
+      is_published_type: typeof is_published
+    })
+
+    // 验证必填字段
+    if (!title || !content) {
+      return NextResponse.json(
+        { success: false, error: '标题和内容为必填项' },
+        { status: 400 }
+      )
+    }
+
     // 如果状态变为已发布，更新发布时间
     const currentNews = dbGet(`SELECT is_published FROM news WHERE id = ?`, [id]) as any
+    if (!currentNews) {
+      return NextResponse.json(
+        { success: false, error: '新闻不存在' },
+        { status: 404 }
+      )
+    }
+
     const publishedAt = (!currentNews?.is_published && is_published)
       ? new Date().toISOString()
       : undefined
@@ -78,7 +104,19 @@ export async function PUT(
       SET title = ?, content = ?, summary = ?, cover_image = ?,
           category_id = ?, is_published = ?, updated_at = CURRENT_TIMESTAMP
     `
-    const sqlParams: any[] = [title, content, summary, cover_image, category_id, is_published ? 1 : 0]
+    // Ensure is_published is explicitly converted to 0 or 1
+    const publishedValue = is_published === true || is_published === 1 || is_published === '1' ? 1 : 0
+
+    const sqlParams: any[] = [
+      title,
+      content,
+      summary || null,
+      cover_image || null,
+      category_id || null,
+      publishedValue
+    ]
+
+    console.log('[News Update] SQL Params:', sqlParams)
 
     if (publishedAt) {
       sql += `, published_at = ?`
@@ -88,7 +126,16 @@ export async function PUT(
     sql += ` WHERE id = ?`
     sqlParams.push(id)
 
-    dbRun(sql, sqlParams)
+    console.log('[News Update] Final SQL:', sql)
+    console.log('[News Update] Final Params:', sqlParams)
+
+    try {
+      const result = dbRun(sql, sqlParams)
+      console.log('[News Update] DB Result:', result)
+    } catch (dbError) {
+      console.error('[News Update] DB Error:', dbError)
+      throw dbError
+    }
 
     const updatedNews = dbGet(`
       SELECT n.*, nc.name as category_name, p.full_name as author_name
