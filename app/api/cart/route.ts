@@ -47,27 +47,16 @@ export async function GET(req: NextRequest) {
     const items = cartItems.map((item: any) => {
       return {
         id: item.id.toString(),
-        user_id: decoded.userId,
-        ticket_id: item.ticket_id.toString(),
         quantity: item.quantity,
-        created_at: item.created_at,
-        ticket: {
-          id: item.ticket_id.toString(),
-          spot_id: item.spot_id?.toString(),
-          name: item.ticket_name,
-          description: item.ticket_description,
-          price: item.ticket_price,
-          stock: item.ticket_stock,
-          valid_from: item.valid_from,
-          valid_to: item.valid_to,
-          is_active: item.status === 'active',
-          spot: {
-            id: item.spot_id?.toString(),
-            name: item.spot_name,
-            location: item.spot_location,
-            images: item.spot_images ? JSON.parse(item.spot_images) : []
-          }
-        }
+        ticket_id: item.ticket_id.toString(),
+        ticket_name: item.ticket_name,
+        ticket_description: item.ticket_description,
+        ticket_price: item.ticket_price,
+        ticket_stock: item.ticket_stock,
+        spot_id: item.spot_id?.toString(),
+        spot_name: item.spot_name,
+        spot_location: item.spot_location,
+        spot_images: item.spot_images ? JSON.parse(item.spot_images) : []
       }
     })
 

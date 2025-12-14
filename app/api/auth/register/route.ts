@@ -21,7 +21,8 @@ export async function POST(request: NextRequest) {
 
     const result = await registerUser({ email, password, full_name, role })
 
-    return NextResponse.json({
+    // 创建响应并设置 httpOnly cookie
+    const response = NextResponse.json({
       success: true,
       data: {
         user: result.user,
@@ -29,6 +30,17 @@ export async function POST(request: NextRequest) {
       },
       message: '注册成功'
     })
+
+    // 设置 httpOnly cookie，7天过期
+    response.cookies.set('token', result.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/'
+    })
+
+    return response
   } catch (error: any) {
     console.error('注册错误:', error)
     return NextResponse.json(

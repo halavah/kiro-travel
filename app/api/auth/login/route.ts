@@ -21,13 +21,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({
+    // 创建响应并设置 httpOnly cookie
+    const response = NextResponse.json({
       success: true,
       data: {
         user: result.user,
         token: result.token
       }
     })
+
+    // 设置 httpOnly cookie，7天过期
+    response.cookies.set('token', result.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/'
+    })
+
+    return response
   } catch (error) {
     console.error('登录错误:', error)
 
