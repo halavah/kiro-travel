@@ -32,10 +32,12 @@ export default function CartPage() {
   // 获取购物车数据
   const fetchCart = async () => {
     try {
-      const res = await fetch('/api/cart')
+      const res = await fetch('/api/cart', {
+        credentials: 'include' // 自动发送 cookie
+      })
 
       if (res.status === 401) {
-        router.push('/login')
+        router.push('/auth/sign-in')
         return
       }
 
@@ -66,6 +68,7 @@ export default function CartPage() {
       const res = await fetch(`/api/cart/${itemId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // 自动发送 cookie
         body: JSON.stringify({ quantity: newQuantity })
       })
 
@@ -91,7 +94,8 @@ export default function CartPage() {
     setUpdating(itemId)
     try {
       const res = await fetch(`/api/cart/${itemId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include' // 自动发送 cookie
       })
 
       if (!res.ok) {
@@ -115,7 +119,8 @@ export default function CartPage() {
     setLoading(true)
     try {
       const res = await fetch('/api/cart', {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include' // 自动发送 cookie
       })
 
       if (!res.ok) {
