@@ -23,6 +23,7 @@ interface Ticket {
   status: 'active' | 'inactive'
   valid_from: string
   valid_to: string
+  spot_id: string
   spot_name: string
   spot_location: string
   sold_count: number
@@ -144,7 +145,7 @@ export default function AdminTicketsPage() {
       description: ticket.description,
       price: ticket.price.toString(),
       stock: ticket.stock.toString(),
-      spot_id: ticket.spot_name,
+      spot_id: ticket.spot_id,
       valid_from: ticket.valid_from,
       valid_to: ticket.valid_to,
       status: ticket.status

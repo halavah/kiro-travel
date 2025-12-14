@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Search, Plus, Edit, Trash2, Star, MapPin, Phone } from "lucide-react"
 import { toast } from "sonner"
 import Image from 'next/image'
+import ImageUpload from '@/components/admin/ImageUpload'
 
 interface Hotel {
   id: string
@@ -135,7 +136,7 @@ export default function AdminHotelsPage() {
       rating: hotel.rating.toString(),
       price_range: hotel.price_range,
       facilities: hotel.facilities || [],
-      images: hotel.images || [],
+      images: hotel.images && hotel.images.length > 0 ? hotel.images : [''],
       contact_phone: hotel.contact_phone,
       contact_email: hotel.contact_email,
       status: hotel.status
@@ -220,7 +221,22 @@ export default function AdminHotelsPage() {
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEditingHotel(null)}>
+            <Button onClick={() => {
+              setEditingHotel(null)
+              setFormData({
+                name: '',
+                description: '',
+                location: '',
+                address: '',
+                rating: '5',
+                price_range: '',
+                facilities: [],
+                images: [''],
+                contact_phone: '',
+                contact_email: '',
+                status: 'active'
+              })
+            }}>
               <Plus className="h-4 w-4 mr-2" />
               添加酒店
             </Button>
@@ -365,21 +381,35 @@ export default function AdminHotelsPage() {
                   </div>
                 </div>
                 <div className="grid grid-cols-4 items-start gap-4">
-                  <Label htmlFor="images" className="text-right pt-2">
-                    图片链接
+                  <Label className="text-right pt-2">
+                    图片
                   </Label>
-                  <div className="col-span-3 space-y-2">
+                  <div className="col-span-3 space-y-4">
                     {formData.images.map((img, index) => (
-                      <Input
-                        key={index}
-                        value={img}
-                        onChange={(e) => {
-                          const newImages = [...formData.images]
-                          newImages[index] = e.target.value
-                          setFormData({ ...formData, images: newImages })
-                        }}
-                        placeholder="图片URL"
-                      />
+                      <div key={index} className="space-y-2">
+                        <ImageUpload
+                          label={`图片 ${index + 1}`}
+                          value={img}
+                          onChange={(url) => {
+                            const newImages = [...formData.images]
+                            newImages[index] = url
+                            setFormData({ ...formData, images: newImages })
+                          }}
+                        />
+                        {formData.images.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const newImages = formData.images.filter((_, i) => i !== index)
+                              setFormData({ ...formData, images: newImages })
+                            }}
+                          >
+                            移除此图片
+                          </Button>
+                        )}
+                      </div>
                     ))}
                     <Button
                       type="button"

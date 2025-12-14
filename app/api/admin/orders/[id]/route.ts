@@ -40,7 +40,7 @@ export async function GET(
         o.status,
         o.paid_at,
         o.created_at,
-        p.username,
+        p.full_name as username,
         p.email,
         p.phone
       FROM orders o

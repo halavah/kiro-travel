@@ -14,6 +14,7 @@ import { Search, Plus, Edit, Trash2, Star, Eye, MapPin } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
 import Image from 'next/image'
+import ImageUpload from '@/components/admin/ImageUpload'
 
 interface Spot {
   id: string
@@ -149,7 +150,7 @@ export default function AdminSpotsPage() {
       price: spot.price.toString(),
       category_id: spot.category_name,
       is_recommended: spot.is_recommended === 1,
-      images: spot.images || [],
+      images: spot.images && spot.images.length > 0 ? spot.images : [''],
       status: spot.status
     })
     setIsAddDialogOpen(true)
@@ -233,7 +234,20 @@ export default function AdminSpotsPage() {
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEditingSpot(null)}>
+            <Button onClick={() => {
+              setEditingSpot(null)
+              setFormData({
+                name: '',
+                description: '',
+                location: '',
+                address: '',
+                price: '',
+                category_id: '',
+                is_recommended: false,
+                images: [''],
+                status: 'active'
+              })
+            }}>
               <Plus className="h-4 w-4 mr-2" />
               添加景点
             </Button>
@@ -328,22 +342,36 @@ export default function AdminSpotsPage() {
                     required
                   />
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="images" className="text-right">
-                    图片链接
+                <div className="grid grid-cols-4 items-start gap-4">
+                  <Label className="text-right pt-2">
+                    图片
                   </Label>
-                  <div className="col-span-3 space-y-2">
+                  <div className="col-span-3 space-y-4">
                     {formData.images.map((img, index) => (
-                      <Input
-                        key={index}
-                        value={img}
-                        onChange={(e) => {
-                          const newImages = [...formData.images]
-                          newImages[index] = e.target.value
-                          setFormData({ ...formData, images: newImages })
-                        }}
-                        placeholder="图片URL"
-                      />
+                      <div key={index} className="space-y-2">
+                        <ImageUpload
+                          label={`图片 ${index + 1}`}
+                          value={img}
+                          onChange={(url) => {
+                            const newImages = [...formData.images]
+                            newImages[index] = url
+                            setFormData({ ...formData, images: newImages })
+                          }}
+                        />
+                        {formData.images.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const newImages = formData.images.filter((_, i) => i !== index)
+                              setFormData({ ...formData, images: newImages })
+                            }}
+                          >
+                            移除此图片
+                          </Button>
+                        )}
+                      </div>
                     ))}
                     <Button
                       type="button"

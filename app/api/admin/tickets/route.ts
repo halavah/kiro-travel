@@ -53,6 +53,7 @@ export async function GET(req: NextRequest) {
         t.valid_from,
         t.valid_to,
         t.created_at,
+        t.spot_id,
         s.name as spot_name,
         s.location as spot_location,
         COALESCE(SUM(oi.quantity), 0) as sold_count
