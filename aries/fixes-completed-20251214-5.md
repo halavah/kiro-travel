@@ -10,7 +10,7 @@ PUT http://localhost:3000/api/news/[id] [HTTP/1.1 500 Internal Server Error]
 
 ## 🔍 根本原因
 
-**变量名冲突** - `/app/api/news/[id]/route.ts` ��� 81 行
+**变量名冲突** - `/app/api/news/[id]/route.ts` 第 81 行
 
 ```typescript
 export async function PUT(
@@ -26,14 +26,14 @@ export async function PUT(
 
 ### 问题详解
 
-1. **函数参数**: `{ params }` 是解构的路由参数，类型为 `{ id: string }`
+1. **函数参数**: `{ params }` 是解构的路由参数,类型为 `{ id: string }`
 2. **局部变量**: `const params: any[]` 是 SQL 参数数组
 3. **变量遮蔽**: 局部变量 `params` 遮蔽了函数参数 `params`
-4. **运行时错误**: 当尝试 `params.push(id)` 时，TypeScript/JavaScript 不知道应该使用哪个 `params`
+4. **运行时错误**: 当尝试 `params.push(id)` 时,TypeScript/JavaScript 不知道应该使用哪个 `params`
 
 ## ✅ 解决方案
 
-重命名局部变量，避免冲突：
+重命名局部变量,避免冲突:
 
 ```typescript
 // 修改前
@@ -45,7 +45,7 @@ params.push(id)
 dbRun(sql, params)
 
 // 修改后
-const sqlParams: any[] = [title, content, summary, cover_image, category_id, is_published ? 1 : 0]
+const sqlParams: any[] = [title, content, summary, cover_image, category_id, publishedValue]
 if (publishedAt) {
   sqlParams.push(publishedAt)
 }
@@ -53,9 +53,41 @@ sqlParams.push(id)
 dbRun(sql, sqlParams)
 ```
 
+## 🔧 额外改进
+
+### 1. 显式类型转换
+
+```typescript
+// 确保 is_published 总是 0 或 1
+const publishedValue = is_published === true || is_published === 1 || is_published === '1' ? 1 : 0
+```
+
+### 2. 详细的错误日志
+
+添加了多个日志点来追踪请求:
+
+```typescript
+console.log('[News Update] Request body:', { id, title, is_published, is_published_type })
+console.log('[News Update] SQL Params:', sqlParams)
+console.log('[News Update] Final SQL:', sql)
+console.log('[News Update] DB Result:', result)
+```
+
+### 3. 更好的错误处理
+
+```typescript
+try {
+  const result = dbRun(sql, sqlParams)
+  console.log('[News Update] DB Result:', result)
+} catch (dbError) {
+  console.error('[News Update] DB Error:', dbError)
+  throw dbError
+}
+```
+
 ## 📂 修改的文件
 
-- `/app/api/news/[id]/route.ts` - PUT 方法，第 81-91 行
+- `/app/api/news/[id]/route.ts` - PUT 方法,第 66-139 行
 
 ## 🎯 影响范围
 
@@ -66,9 +98,9 @@ dbRun(sql, sqlParams)
 
 ## 💡 相关问题
 
-这个问题与之前修复的 activities 表约束问题不同：
-- Activities: 数据库约束错误（CHECK constraint）
-- News: 代码逻辑错误（变量名冲突）
+这个问题与之前修复的 activities 表约束问题不同:
+- Activities: 数据库约束错误 (CHECK constraint)
+- News: 代码逻辑错误 (变量名冲突)
 
 ## 📝 教训
 
