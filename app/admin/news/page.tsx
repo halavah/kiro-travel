@@ -145,7 +145,10 @@ export default function AdminNewsPage() {
         })
       })
 
-      if (!res.ok) throw new Error('Failed to update news')
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.details || data.error || 'Failed to update news')
+      }
 
       toast.success('新闻更新成功')
       setEditingNews(null)
@@ -153,7 +156,7 @@ export default function AdminNewsPage() {
       fetchNews()
     } catch (error) {
       console.error('Error updating news:', error)
-      toast.error('更新新闻失败')
+      toast.error(error instanceof Error ? error.message : '更新新闻失败')
     }
   }
 

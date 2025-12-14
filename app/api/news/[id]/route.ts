@@ -78,17 +78,17 @@ export async function PUT(
       SET title = ?, content = ?, summary = ?, cover_image = ?,
           category_id = ?, is_published = ?, updated_at = CURRENT_TIMESTAMP
     `
-    const params: any[] = [title, content, summary, cover_image, category_id, is_published ? 1 : 0]
+    const sqlParams: any[] = [title, content, summary, cover_image, category_id, is_published ? 1 : 0]
 
     if (publishedAt) {
       sql += `, published_at = ?`
-      params.push(publishedAt)
+      sqlParams.push(publishedAt)
     }
 
     sql += ` WHERE id = ?`
-    params.push(id)
+    sqlParams.push(id)
 
-    dbRun(sql, params)
+    dbRun(sql, sqlParams)
 
     const updatedNews = dbGet(`
       SELECT n.*, nc.name as category_name, p.full_name as author_name
@@ -106,7 +106,11 @@ export async function PUT(
   } catch (error) {
     console.error('Error updating news:', error)
     return NextResponse.json(
-      { success: false, error: '更新新闻失败' },
+      {
+        success: false,
+        error: '更新新闻失败',
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     )
   }
