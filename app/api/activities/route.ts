@@ -68,8 +68,16 @@ export async function GET(request: NextRequest) {
 // POST /api/activities - 创建新活动 (导游/管理员权限)
 export async function POST(request: NextRequest) {
   try {
-    const user = await validateAuth(request)
-    if (!user || !checkRole(user.role, ['admin', 'guide'])) {
+    const { user, error } = await validateAuth(request)
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: error || '请先登录' },
+        { status: 401 }
+      )
+    }
+
+    if (!checkRole(user.role, 'guide')) {
       return NextResponse.json(
         { success: false, error: '需要导游或管理员权限' },
         { status: 403 }

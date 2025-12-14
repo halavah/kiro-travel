@@ -176,18 +176,28 @@ export default function AdminActivitiesPage() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          ...activity,
+          title: activity.title,
+          description: activity.description,
+          location: activity.location,
+          start_time: activity.start_time,
+          end_time: activity.end_time,
+          max_participants: activity.max_participants,
+          price: activity.price,
+          images: activity.images,
           status: newStatus
         })
       })
 
-      if (!res.ok) throw new Error('Failed to toggle status')
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to toggle status')
+      }
 
       toast.success(`活动已${newStatus === 'active' ? '上架' : '下架'}`)
       fetchActivities()
     } catch (error) {
       console.error('Error toggling status:', error)
-      toast.error('状态切换失败')
+      toast.error(error instanceof Error ? error.message : '状态切换失败')
     }
   }
 
@@ -210,7 +220,14 @@ export default function AdminActivitiesPage() {
             'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
-            ...activity,
+            title: activity.title,
+            description: activity.description,
+            location: activity.location,
+            start_time: activity.start_time,
+            end_time: activity.end_time,
+            max_participants: activity.max_participants,
+            price: activity.price,
+            images: activity.images,
             status
           })
         })

@@ -61,8 +61,16 @@ export async function GET(request: NextRequest) {
 // POST /api/news - 创建新闻 (管理员权限)
 export async function POST(request: NextRequest) {
   try {
-    const user = await validateAuth(request)
-    if (!user || !checkRole(user.role, ['admin'])) {
+    const { user, error } = await validateAuth(request)
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: error || '请先登录' },
+        { status: 401 }
+      )
+    }
+
+    if (user.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: '需要管理员权限' },
         { status: 403 }
