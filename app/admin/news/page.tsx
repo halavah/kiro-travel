@@ -50,7 +50,7 @@ export default function AdminNewsPage() {
     content: '',
     summary: '',
     cover_image: '',
-    category_id: '',
+    category_id: 'none',
     is_published: false
   })
 
@@ -112,7 +112,7 @@ export default function AdminNewsPage() {
         },
         body: JSON.stringify({
           ...formData,
-          category_id: formData.category_id ? parseInt(formData.category_id) : null
+          category_id: formData.category_id && formData.category_id !== 'none' ? parseInt(formData.category_id) : null
         })
       })
 
@@ -141,7 +141,7 @@ export default function AdminNewsPage() {
         },
         body: JSON.stringify({
           ...formData,
-          category_id: formData.category_id ? parseInt(formData.category_id) : null
+          category_id: formData.category_id && formData.category_id !== 'none' ? parseInt(formData.category_id) : null
         })
       })
 
@@ -256,7 +256,7 @@ export default function AdminNewsPage() {
       content: newsItem.content,
       summary: newsItem.summary || '',
       cover_image: newsItem.cover_image || '',
-      category_id: newsItem.category_id?.toString() || '',
+      category_id: newsItem.category_id ? newsItem.category_id.toString() : 'none',
       is_published: newsItem.is_published === 1
     })
   }
@@ -267,7 +267,7 @@ export default function AdminNewsPage() {
       content: '',
       summary: '',
       cover_image: '',
-      category_id: '',
+      category_id: 'none',
       is_published: false
     })
   }
@@ -516,7 +516,7 @@ export default function AdminNewsPage() {
                     <SelectValue placeholder="选择分类" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">未分类</SelectItem>
+                    <SelectItem value="none">未分类</SelectItem>
                     {categories.map(cat => (
                       <SelectItem key={cat.id} value={cat.id.toString()}>{cat.name}</SelectItem>
                     ))}
