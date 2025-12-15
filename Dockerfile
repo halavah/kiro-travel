@@ -1,32 +1,23 @@
 # 使用 Node.js 20 Debian Slim 镜像（better-sqlite3 和 lightningcss 需要更好的原生模块支持）
 FROM node:20-slim AS base
 
-# 安装依赖阶段
-FROM base AS deps
-# 安装 better-sqlite3 和 lightningcss 需要的构建工具
-RUN apt-get update && apt-get install -y \
-    python3 \
-    make \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
-WORKDIR /app
-
-# 复制 package.json 和 lock 文件
-COPY package.json package-lock.json* ./
-RUN npm ci
-
-# 构建阶段
+# 构建阶段（合并依赖安装和构建，确保原生模块在正确环境中编译）
 FROM base AS builder
 WORKDIR /app
 
-# 安装编译工具（lightningcss 需要在构建时重新编译原生模块）
+# 安装编译工具（better-sqlite3 和 lightningcss 需要）
 RUN apt-get update && apt-get install -y \
     python3 \
     make \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=deps /app/node_modules ./node_modules
+# 复制 package.json 并在有编译工具的环境中安装依赖
+# 这确保 lightningcss 安装 linux-x64-gnu 版本而不是 darwin-arm64
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# 复制源代码
 COPY . .
 
 # 设置环境变量
