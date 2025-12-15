@@ -38,6 +38,14 @@ interface UserProfile {
   role: string
 }
 
+interface UserStats {
+  orders: number
+  bookings: number
+  activities: number
+  favorites: number
+  comments: number
+}
+
 const navItems = [
   { href: "/spots", label: "景点", icon: MapPin },
   { href: "/tickets", label: "门票", icon: Ticket },
@@ -60,6 +68,13 @@ export function Header() {
   const [user, setUser] = useState<UserProfile | null>(null)
   const { cartCount, refreshCart } = useCart()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [stats, setStats] = useState<UserStats>({
+    orders: 0,
+    bookings: 0,
+    activities: 0,
+    favorites: 0,
+    comments: 0
+  })
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -77,6 +92,25 @@ export function Header() {
           const userRole = userData.data?.user?.role || userData.user?.role
           if (userRole !== 'guide') {
             refreshCart()
+
+            // 获取用户统计数据
+            try {
+              const statsRes = await fetch('/api/profile/stats', {
+                credentials: 'include'
+              })
+              if (statsRes.ok) {
+                const statsData = await statsRes.json()
+                setStats(statsData.data || {
+                  orders: 0,
+                  bookings: 0,
+                  activities: 0,
+                  favorites: 0,
+                  comments: 0
+                })
+              }
+            } catch (error) {
+              console.error('获取统计数据失败:', error)
+            }
           }
         } else {
           // 未认证
@@ -235,6 +269,36 @@ export function Header() {
             <>
               {user.role !== "guide" && (
                 <>
+                  <Link href="/orders" className="hidden md:inline-flex">
+                    <Button variant="ghost" size="icon" className="relative" title="门票订单">
+                      <Ticket className="h-5 w-5 text-orange-600" />
+                      {stats.orders > 0 && (
+                        <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                          {stats.orders}
+                        </Badge>
+                      )}
+                    </Button>
+                  </Link>
+                  <Link href="/profile/bookings" className="hidden md:inline-flex">
+                    <Button variant="ghost" size="icon" className="relative" title="酒店预订">
+                      <Hotel className="h-5 w-5 text-blue-600" />
+                      {stats.bookings > 0 && (
+                        <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                          {stats.bookings}
+                        </Badge>
+                      )}
+                    </Button>
+                  </Link>
+                  <Link href="/profile/activities" className="hidden md:inline-flex">
+                    <Button variant="ghost" size="icon" className="relative" title="活动报名">
+                      <Compass className="h-5 w-5 text-purple-600" />
+                      {stats.activities > 0 && (
+                        <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                          {stats.activities}
+                        </Badge>
+                      )}
+                    </Button>
+                  </Link>
                   <Link href="/favorites">
                     <Button variant="ghost" size="icon" className="relative">
                       <Heart className="h-5 w-5" />
@@ -338,6 +402,56 @@ export function Header() {
               )
             })}
 
+
+            {/* 快捷入口 - 非导游用户可见 */}
+            {user && user.role !== "guide" && (
+              <>
+                <div className="border-t pt-2 mt-2">
+                  <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    快捷入口
+                  </p>
+                </div>
+                <Link
+                  href="/orders"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
+                >
+                  <Ticket className="h-4 w-4 text-orange-600" />
+                  <span>门票订单</span>
+                  {stats.orders > 0 && (
+                    <Badge className="ml-auto h-5 w-5 flex items-center justify-center p-0 text-xs">
+                      {stats.orders}
+                    </Badge>
+                  )}
+                </Link>
+                <Link
+                  href="/profile/bookings"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
+                >
+                  <Hotel className="h-4 w-4 text-blue-600" />
+                  <span>酒店预订</span>
+                  {stats.bookings > 0 && (
+                    <Badge className="ml-auto h-5 w-5 flex items-center justify-center p-0 text-xs">
+                      {stats.bookings}
+                    </Badge>
+                  )}
+                </Link>
+                <Link
+                  href="/profile/activities"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
+                >
+                  <Compass className="h-4 w-4 text-purple-600" />
+                  <span>活动报名</span>
+                  {stats.activities > 0 && (
+                    <Badge className="ml-auto h-5 w-5 flex items-center justify-center p-0 text-xs">
+                      {stats.activities}
+                    </Badge>
+                  )}
+                </Link>
+              </>
+            )}
             {/* 后台管理 - 仅管理员可见 */}
             {user?.role === "admin" && (
               <>
