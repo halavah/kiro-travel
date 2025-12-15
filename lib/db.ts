@@ -59,9 +59,21 @@ function isDatabaseInitialized(): boolean {
 // 数据库初始化函数
 export function initDatabase() {
   try {
-    // 读取 SQLite 版本的 SQL 文件并执行
-    const schema = require('fs').readFileSync(join(process.cwd(), 'scripts', '001_create_tables_sqlite.sql'), 'utf8')
-    db.exec(schema)
+    // 使用 init-db.js 脚本初始化数据库
+    const { execSync } = require('child_process')
+    const initScriptPath = join(process.cwd(), 'scripts', 'init-db.js')
+
+    // 检查初始化脚本是否存在
+    if (!existsSync(initScriptPath)) {
+      throw new Error(`初始化脚本不存在: ${initScriptPath}`)
+    }
+
+    console.log('🔧 执行数据库初始化脚本:', initScriptPath)
+    execSync(`node "${initScriptPath}"`, {
+      stdio: 'inherit',
+      cwd: process.cwd(),
+      env: { ...process.env, DB_INITIALIZING: 'true' }
+    })
     console.log('✅ 数据库初始化成功')
   } catch (error) {
     console.error('❌ 数据库初始化失败:', error)
@@ -70,12 +82,17 @@ export function initDatabase() {
 }
 
 // 自动初始化数据库（如果表不存在）
-if (!isDatabaseInitialized()) {
+// 使用环境变量防止在 init-db.js 执行时重复初始化
+if (!isDatabaseInitialized() && !process.env.DB_INITIALIZING) {
   console.log('🔧 数据库未初始化，开始自动初始化...')
   try {
+    // 设置标志防止递归初始化
+    process.env.DB_INITIALIZING = 'true'
     initDatabase()
+    delete process.env.DB_INITIALIZING
   } catch (error) {
     console.error('❌ 自动初始化数据库失败:', error)
+    delete process.env.DB_INITIALIZING
     // 不抛出错误，允许构建继续（运行时会由 dynamic 路由处理）
   }
 }
