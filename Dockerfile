@@ -1,10 +1,10 @@
-# 使用 Node.js 18 官方镜像
-FROM node:18-alpine AS base
+# 使用 Node.js 20 官方镜像（better-sqlite3 和 Next.js 16 需要 Node 20+）
+FROM node:20-alpine AS base
 
 # 安装依赖阶段
 FROM base AS deps
-# 安装 better-sqlite3 需要的构建工具
-RUN apk add --no-cache libc6-compat python3 make g++
+# 安装 better-sqlite3 需要的构建工具和 Python setuptools
+RUN apk add --no-cache libc6-compat python3 python3-dev py3-setuptools make g++
 WORKDIR /app
 
 # 复制 package.json 和 lock 文件
