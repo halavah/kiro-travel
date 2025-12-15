@@ -13,17 +13,13 @@ export async function GET(
     const available = searchParams.get('available') === 'true'
 
     let whereClause = 'WHERE hotel_id = ? AND status = ?'
-    const queryParams: any[] = [id, 'active']
-
-    if (available) {
-      whereClause += ' AND stock > 0'
-    }
+    const queryParams: any[] = [id, 'available']
 
     const sql = `
       SELECT *
       FROM hotel_rooms
       ${whereClause}
-      ORDER BY price ASC
+      ORDER BY price_per_night ASC
     `
 
     const rooms = dbQuery(sql, queryParams)
@@ -75,18 +71,18 @@ export async function POST(
     const body = await request.json()
     const {
       name,
+      type,
       description,
-      price,
-      capacity,
+      price_per_night,
+      max_occupancy,
       images,
-      amenities,
-      stock
+      amenities
     } = body
 
     // 验证必填字段
-    if (!name || !price) {
+    if (!name || !type || !price_per_night || !max_occupancy) {
       return NextResponse.json(
-        { success: false, error: '房间名称和价格为必填项' },
+        { success: false, error: '房间名称、类型、价格和最大入住人数为必填项' },
         { status: 400 }
       )
     }
@@ -96,17 +92,17 @@ export async function POST(
 
     const sql = `
       INSERT INTO hotel_rooms (
-        id, hotel_id, name, description, price, capacity,
-        images, amenities, stock, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
+        hotel_id, name, type, max_occupancy, price_per_night,
+        images, amenities, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'available')
     `
 
-    const roomId = `room_${Date.now()}`
-    dbRun(sql, [
-      roomId, id, name, description, price, capacity || 2,
-      imagesJson, amenitiesJson, stock || 1
+    const result = dbRun(sql, [
+      id, name, type, max_occupancy, price_per_night,
+      imagesJson, amenitiesJson
     ])
 
+    const roomId = result.lastInsertRowid
     const room = dbGet('SELECT * FROM hotel_rooms WHERE id = ?', [roomId])
 
     return NextResponse.json({

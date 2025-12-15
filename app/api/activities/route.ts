@@ -10,7 +10,8 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10')
     const search = searchParams.get('search') || ''
     const location = searchParams.get('location') || ''
-    const activityType = searchParams.get('activity_type') || ''
+    // TODO: 活动类型过滤需要数据库添加 activity_type 字段
+    // const activityType = searchParams.get('activity_type') || ''
     const isActive = searchParams.get('is_active')
 
     let whereClause = "WHERE 1=1"
@@ -34,10 +35,11 @@ export async function GET(request: NextRequest) {
       params.push(`%${location}%`)
     }
 
-    if (activityType) {
-      whereClause += ' AND a.activity_type = ?'
-      params.push(activityType)
-    }
+    // TODO: 恢复活动类型过滤功能需要先在数据库添加 activity_type 字段
+    // if (activityType) {
+    //   whereClause += ' AND a.activity_type = ?'
+    //   params.push(activityType)
+    // }
 
     const sql = `
       SELECT
@@ -114,24 +116,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const id = `activity_${Date.now()}`
-
     // 规范化 images 字段
     const normalizedImages = normalizeJsonArrayField(images)
 
     const sql = `
       INSERT INTO activities (
-        id, title, description, location, images, activity_type,
+        title, description, location, images, activity_type,
         start_time, end_time, price, max_participants, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
     `
 
-    dbRun(sql, [
-      id, title, description, location, normalizedImages, activity_type,
+    const result = dbRun(sql, [
+      title, description, location, normalizedImages, activity_type,
       start_time, end_time, price, max_participants
     ])
 
-    const activity = dbGet('SELECT * FROM activities WHERE id = ?', [id])
+    const activityId = result.lastInsertRowid
+    const activity = dbGet('SELECT * FROM activities WHERE id = ?', [activityId])
 
     return NextResponse.json({
       success: true,

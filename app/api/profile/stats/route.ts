@@ -41,11 +41,21 @@ export async function GET(req: NextRequest) {
     `, [decoded.userId])
     const activities = activitiesResult[0]?.count || 0
 
-    // 收藏数量（spot_favorites表不存在，暂时返回0）
-    const favorites = 0
+    // 收藏数量
+    const favoritesResult = dbQuery(`
+      SELECT COUNT(*) as count
+      FROM spot_favorites
+      WHERE user_id = ?
+    `, [decoded.userId])
+    const favorites = favoritesResult[0]?.count || 0
 
-    // 评论数量（spot_comments表不存在，暂时返回0）
-    const comments = 0
+    // 评论数量
+    const commentsResult = dbQuery(`
+      SELECT COUNT(*) as count
+      FROM spot_comments
+      WHERE user_id = ?
+    `, [decoded.userId])
+    const comments = commentsResult[0]?.count || 0
 
     return NextResponse.json({
       data: {

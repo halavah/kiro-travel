@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import { getTokenFromRequest } from '@/lib/middleware'
 import { dbQuery, dbGet, dbRun } from '@/lib/db-utils'
-import { randomUUID } from 'crypto'
 
 // GET - 获取所有酒店（管理员）
 export async function GET(req: NextRequest) {
@@ -98,11 +97,10 @@ export async function POST(req: NextRequest) {
       location,
       address,
       rating,
-      price_range,
       amenities,
       images,
       contact_phone,
-            status
+      status
     } = body
 
     // 验证必填字段
@@ -113,27 +111,24 @@ export async function POST(req: NextRequest) {
     }
 
     // 创建酒店
-    const hotelId = randomUUID()
-    dbRun(`
+    const result = dbRun(`
       INSERT INTO hotels (
-        id, name, description, location, address, rating,
-        price_range, amenities, images, contact_phone,         status, created_by, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        name, description, location, address, rating,
+        amenities, images, phone, status, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
     `, [
-      hotelId,
       name,
       description || null,
       location,
       address || null,
       parseFloat(rating),
-      price_range || null,
       JSON.stringify(amenities || []),
       JSON.stringify(images || []),
       contact_phone || null,
-      contact_email || null,
-      status || 'active',
-      decoded.userId
+      status || 'active'
     ])
+
+    const hotelId = result.lastInsertRowid
 
     // 获取创建的酒店
     const hotel = dbGet(`

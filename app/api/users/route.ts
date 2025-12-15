@@ -1,10 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query, get, run } from '@/lib/sqlite'
 import bcrypt from 'bcryptjs'
+import { validateAuth } from '@/lib/auth'
 
 // GET /api/users - 获取用户列表
 export async function GET(request: NextRequest) {
   try {
+    // 验证管理员权限
+    const { user, error } = await validateAuth(request)
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: error || '请先登录' },
+        { status: 401 }
+      )
+    }
+
+    if (user.role !== 'admin') {
+      return NextResponse.json(
+        { success: false, error: '需要管理员权限' },
+        { status: 403 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const role = searchParams.get('role')
 
@@ -36,6 +54,23 @@ export async function GET(request: NextRequest) {
 // POST /api/users - 创建新用户
 export async function POST(request: NextRequest) {
   try {
+    // 验证管理员权限
+    const { user, error } = await validateAuth(request)
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: error || '请先登录' },
+        { status: 401 }
+      )
+    }
+
+    if (user.role !== 'admin') {
+      return NextResponse.json(
+        { success: false, error: '需要管理员权限' },
+        { status: 403 }
+      )
+    }
+
     const body = await request.json()
     const { email, password, full_name, role = 'user' } = body
 
@@ -65,14 +100,14 @@ export async function POST(request: NextRequest) {
     const { lastID } = await run(sql, [email, hashedPassword, full_name, role])
 
     // Return user without password
-    const user = await get(
+    const newUser = await get(
       'SELECT id, email, full_name, role, avatar_url, created_at FROM profiles WHERE id = ?',
       [lastID]
     )
 
     return NextResponse.json({
       success: true,
-      data: user
+      data: newUser
     })
   } catch (error) {
     console.error('Error creating user:', error)

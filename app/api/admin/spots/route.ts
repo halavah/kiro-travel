@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import { getTokenFromRequest } from '@/lib/middleware'
 import { dbQuery, dbGet, dbRun } from '@/lib/db-utils'
-import { randomUUID } from 'crypto'
 
 // GET - 获取所有景点（管理员）
 export async function GET(req: NextRequest) {
@@ -131,17 +130,18 @@ export async function POST(req: NextRequest) {
     }
 
     // 创建景点
-    const spotId = randomUUID()
-    const { lastInsertRowid } = dbRun(`
+    const result = dbRun(`
       INSERT INTO spots (
-        id, name, description, location, price,
-        category_id, is_recommended, images, status, created_by, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, datetime('now'))
+        name, description, location, price,
+        category_id, is_recommended, images, status, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'active', datetime('now'))
     `, [
-      spotId, name, description || null, location, price,
+      name, description || null, location, price,
       categoryId, is_recommended ? 1 : 0,
-      JSON.stringify(images || []), decoded.userId
+      JSON.stringify(images || [])
     ])
+
+    const spotId = result.lastInsertRowid
 
     // 获取创建的景点
     const spot = dbGet(`

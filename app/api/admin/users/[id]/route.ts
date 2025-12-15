@@ -31,7 +31,9 @@ export async function PATCH(
 
     const { id } = await params
     const body = await req.json()
-    const { role, status } = body
+    const { role } = body
+    // TODO: status 字段需要先在数据库 profiles 表中添加
+    // const { role, status } = body
 
     // 检查目标用户是否存在
     const user = dbGet(`
@@ -58,10 +60,11 @@ export async function PATCH(
       updateValues.push(role)
     }
 
-    if (status !== undefined) {
-      updateFields.push('status = ?')
-      updateValues.push(status)
-    }
+    // TODO: 恢复 status 更新功能需要先在数据库添加 status 字段
+    // if (status !== undefined) {
+    //   updateFields.push('status = ?')
+    //   updateValues.push(status)
+    // }
 
     updateFields.push('updated_at = datetime(\'now\')')
     updateValues.push(id)

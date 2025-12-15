@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { dbQuery, paginate, dbRun, dbGet } from '@/lib/db-utils'
 import { validateAuth, checkRole } from '@/lib/auth'
+import { randomUUID } from 'crypto'
 
 // GET /api/news - 获取新闻列表
 export async function GET(request: NextRequest) {
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const id = `news_${Date.now()}`
+    const id = randomUUID()
     const publishedAt = is_published ? new Date().toISOString() : null
 
     const sql = `

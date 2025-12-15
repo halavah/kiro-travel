@@ -2,14 +2,34 @@ import Database from 'better-sqlite3'
 import { join } from 'path'
 import { existsSync, mkdirSync } from 'fs'
 
-// 确保数据目录存在
-const dataDir = join(process.cwd(), 'data')
-if (!existsSync(dataDir)) {
-  mkdirSync(dataDir, { recursive: true })
+// 数据库路径配置
+// 优先使用环境变量 DATABASE_PATH（Render 部署时使用）
+// 如果没有设置，则使用本地 ./data 目录
+const getDbPath = () => {
+  if (process.env.DATABASE_PATH) {
+    // Render 部署环境，使用持久化磁盘路径
+    console.log('📁 使用 Render 持久化存储:', process.env.DATABASE_PATH)
+    return process.env.DATABASE_PATH
+  }
+  // 本地开发环境
+  const dataDir = join(process.cwd(), 'data')
+  if (!existsSync(dataDir)) {
+    mkdirSync(dataDir, { recursive: true })
+  }
+  const localPath = join(dataDir, 'database.sqlite')
+  console.log('📁 使用本地数据库:', localPath)
+  return localPath
+}
+
+// 确保数据目录存在（对于 Render 的持久化磁盘）
+const dbPath = getDbPath()
+const dbDir = dbPath.substring(0, dbPath.lastIndexOf('/'))
+if (!existsSync(dbDir)) {
+  mkdirSync(dbDir, { recursive: true })
+  console.log('✅ 创建数据库目录:', dbDir)
 }
 
 // 创建数据库连接
-const dbPath = join(dataDir, 'database.sqlite')
 export const db = new Database(dbPath)
 
 // 配置数据库

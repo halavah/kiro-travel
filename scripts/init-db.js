@@ -4,7 +4,9 @@ const path = require('path');
 const fs = require('fs');
 
 // 数据库文件路径
-const dbPath = path.join(__dirname, '..', 'data', 'database.sqlite');
+// 支持 Render 部署：优先使用环境变量 DATABASE_PATH
+const dbPath = process.env.DATABASE_PATH || path.join(__dirname, '..', 'data', 'database.sqlite');
+console.log('📁 数据库路径:', dbPath);
 
 // 删除旧数据库文件
 if (fs.existsSync(dbPath)) {

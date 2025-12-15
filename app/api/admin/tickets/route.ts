@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import { getTokenFromRequest } from '@/lib/middleware'
 import { dbQuery, dbGet, dbRun } from '@/lib/db-utils'
-import { randomUUID } from 'crypto'
 
 // GET - 获取所有门票（管理员）
 export async function GET(req: NextRequest) {
@@ -116,16 +115,17 @@ export async function POST(req: NextRequest) {
     }
 
     // 创建门票
-    const ticketId = randomUUID()
-    const { lastInsertRowid } = dbRun(`
+    const result = dbRun(`
       INSERT INTO tickets (
-        id, name, description, price, stock, spot_id,
+        name, description, price, stock, spot_id,
         valid_from, valid_to, status, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
     `, [
-      ticketId, name, description || null, price, stock, spot_id,
+      name, description || null, price, stock, spot_id,
       valid_from || null, valid_to || null, status || 'active'
     ])
+
+    const ticketId = result.lastInsertRowid
 
     // 获取创建的门票
     const ticket = dbGet(`

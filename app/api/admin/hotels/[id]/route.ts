@@ -37,11 +37,12 @@ export async function PATCH(
       location,
       address,
       rating,
-      price_range,
-      facilities,
+      // TODO: price_range 和 contact_email 字段需要先在数据库添加
+      // price_range,
+      amenities,  // 数据库字段名是 amenities，不是 facilities
       images,
       contact_phone,
-      contact_email,
+      // contact_email,
       status
     } = body
 
@@ -78,26 +79,28 @@ export async function PATCH(
       updateFields.push('rating = ?')
       updateValues.push(parseFloat(rating))
     }
-    if (price_range !== undefined) {
-      updateFields.push('price_range = ?')
-      updateValues.push(price_range)
-    }
-    if (facilities !== undefined) {
-      updateFields.push('facilities = ?')
-      updateValues.push(JSON.stringify(facilities))
+    // TODO: 恢复 price_range 更新功能需要先在数据库添加字段
+    // if (price_range !== undefined) {
+    //   updateFields.push('price_range = ?')
+    //   updateValues.push(price_range)
+    // }
+    if (amenities !== undefined) {
+      updateFields.push('amenities = ?')
+      updateValues.push(JSON.stringify(amenities))
     }
     if (images !== undefined) {
       updateFields.push('images = ?')
       updateValues.push(JSON.stringify(images))
     }
     if (contact_phone !== undefined) {
-      updateFields.push('contact_phone = ?')
+      updateFields.push('phone = ?')  // 数据库字段名是 phone
       updateValues.push(contact_phone)
     }
-    if (contact_email !== undefined) {
-      updateFields.push('contact_email = ?')
-      updateValues.push(contact_email)
-    }
+    // TODO: 恢复 contact_email 更新功能需要先在数据库添加字段
+    // if (contact_email !== undefined) {
+    //   updateFields.push('contact_email = ?')
+    //   updateValues.push(contact_email)
+    // }
     if (status !== undefined) {
       updateFields.push('status = ?')
       updateValues.push(status)
@@ -122,7 +125,7 @@ export async function PATCH(
     // 解析 JSON 字段
     const hotelWithParsedFields = {
       ...updatedHotel,
-      facilities: updatedHotel?.facilities ? JSON.parse(updatedHotel.facilities) : [],
+      amenities: updatedHotel?.amenities ? JSON.parse(updatedHotel.amenities) : [],
       images: updatedHotel?.images ? JSON.parse(updatedHotel.images) : []
     }
 

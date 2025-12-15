@@ -85,6 +85,13 @@ export async function POST(req: NextRequest) {
     let orderItems: any[] = []
 
     if (spot_id && ticket_id && visitors) {
+      // 直接预订模式 - 验证必填字段
+      if (!visitDate || !visitTime || !contactName || !contactPhone) {
+        return NextResponse.json({
+          error: '缺少必填字段：visitDate, visitTime, contactName, contactPhone'
+        }, { status: 400 })
+      }
+
       // 直接预订模式
       const ticket = dbGet(`
         SELECT

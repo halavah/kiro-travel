@@ -10,8 +10,9 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10')
     const search = searchParams.get('search') || ''
     const location = searchParams.get('location') || ''
-    const minPrice = searchParams.get('min_price') || ''
-    const maxPrice = searchParams.get('max_price') || ''
+    // TODO: 价格过滤需要数据库添加 price_min 和 price_max 字段
+    // const minPrice = searchParams.get('min_price') || ''
+    // const maxPrice = searchParams.get('max_price') || ''
     const starRating = searchParams.get('star_rating') || ''
 
     let whereClause = "WHERE h.status = 'active'"
@@ -27,15 +28,16 @@ export async function GET(request: NextRequest) {
       params.push(`%${location}%`)
     }
 
-    if (minPrice) {
-      whereClause += ' AND h.price_min >= ?'
-      params.push(parseFloat(minPrice))
-    }
-
-    if (maxPrice) {
-      whereClause += ' AND h.price_max <= ?'
-      params.push(parseFloat(maxPrice))
-    }
+    // TODO: 恢复价格过滤功能需要先在数据库添加字段
+    // if (minPrice) {
+    //   whereClause += ' AND h.price_min >= ?'
+    //   params.push(parseFloat(minPrice))
+    // }
+    //
+    // if (maxPrice) {
+    //   whereClause += ' AND h.price_max <= ?'
+    //   params.push(parseFloat(maxPrice))
+    // }
 
     if (starRating) {
       whereClause += ' AND h.star_rating = ?'
@@ -109,23 +111,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const id = `hotel_${Date.now()}`
     const imagesJson = JSON.stringify(images || [])
     const amenitiesJson = JSON.stringify(amenities || [])
 
     const sql = `
       INSERT INTO hotels (
-        id, name, description, address, location, images,
+        name, description, address, location, images,
         star_rating, price_min, price_max, amenities, contact_phone, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
     `
 
-    dbRun(sql, [
-      id, name, description, address, location, imagesJson,
+    const result = dbRun(sql, [
+      name, description, address, location, imagesJson,
       star_rating, price_min, price_max, amenitiesJson, contact_phone
     ])
 
-    const hotel = dbGet('SELECT * FROM hotels WHERE id = ?', [id])
+    const hotelId = result.lastInsertRowid
+    const hotel = dbGet('SELECT * FROM hotels WHERE id = ?', [hotelId])
 
     return NextResponse.json({
       success: true,
