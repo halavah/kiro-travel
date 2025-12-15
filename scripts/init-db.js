@@ -940,7 +940,145 @@ const generateCartData = () => {
   });
   console.log('✓ 生成购物车数据');
 
-  // 10. 生成新闻分类数据
+  // 10. 生成酒店预订测试数据
+  const hotelBookingStmt = db.prepare(`
+    INSERT INTO hotel_bookings (user_id, room_id, hotel_name, room_name, check_in, check_out, guests, total_price, status, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const hotelBookings = [
+    {
+      user_id: 4, // 张三
+      room_id: 1, // 北京王府井希尔顿 - 豪华大床房
+      hotel_name: '北京王府井希尔顿酒店',
+      room_name: '豪华大床房',
+      check_in: '2025-12-25',
+      check_out: '2025-12-27',
+      guests: 2,
+      total_price: 2576, // 1288 * 2晚
+      status: 'confirmed',
+      created_at: '2025-12-10 14:30:00'
+    },
+    {
+      user_id: 5, // 李四
+      room_id: 4, // 杭州西湖国宾馆 - 湖景豪华房
+      hotel_name: '杭州西湖国宾馆',
+      room_name: '湖景豪华房',
+      check_in: '2025-12-28',
+      check_out: '2025-12-30',
+      guests: 2,
+      total_price: 3376, // 1688 * 2晚
+      status: 'confirmed',
+      created_at: '2025-12-11 09:15:00'
+    },
+    {
+      user_id: 6, // 王五
+      room_id: 8, // 黄山温泉度假酒店 - 家庭套房
+      hotel_name: '黄山温泉度假酒店',
+      room_name: '家庭套房',
+      check_in: '2025-12-20',
+      check_out: '2025-12-23',
+      guests: 4,
+      total_price: 5064, // 1688 * 3晚
+      status: 'completed',
+      created_at: '2025-12-05 16:20:00'
+    },
+    {
+      user_id: 7, // 赵六
+      room_id: 2, // 北京王府井希尔顿 - 行政套房
+      hotel_name: '北京王府井希尔顿酒店',
+      room_name: '行政套房',
+      check_in: '2025-12-22',
+      check_out: '2025-12-24',
+      guests: 3,
+      total_price: 5176, // 2588 * 2晚
+      status: 'pending',
+      created_at: '2025-12-14 11:45:00'
+    },
+    {
+      user_id: 8, // 钱七
+      room_id: 6, // 杭州西湖国宾馆 - 标准大床房
+      hotel_name: '杭州西湖国宾馆',
+      room_name: '标准大床房',
+      check_in: '2025-12-18',
+      check_out: '2025-12-19',
+      guests: 2,
+      total_price: 1088, // 1088 * 1晚
+      status: 'cancelled',
+      created_at: '2025-12-12 10:30:00'
+    },
+    {
+      user_id: 4, // 张三
+      room_id: 7, // 黄山温泉度假酒店 - 温泉大床房
+      hotel_name: '黄山温泉度假酒店',
+      room_name: '温泉大床房',
+      check_in: '2026-01-05',
+      check_out: '2026-01-08',
+      guests: 2,
+      total_price: 2664, // 888 * 3晚
+      status: 'confirmed',
+      created_at: '2025-12-13 15:20:00'
+    }
+  ];
+
+  hotelBookings.forEach(booking => {
+    hotelBookingStmt.run(
+      booking.user_id,
+      booking.room_id,
+      booking.hotel_name,
+      booking.room_name,
+      booking.check_in,
+      booking.check_out,
+      booking.guests,
+      booking.total_price,
+      booking.status,
+      booking.created_at
+    );
+  });
+  console.log('✓ 生成酒店预订数据');
+
+  // 11. 生成活动报名测试数据
+  const activityParticipantStmt = db.prepare(`
+    INSERT INTO activity_participants (activity_id, user_id, status, created_at)
+    VALUES (?, ?, ?, ?)
+  `);
+
+  const activityParticipants = [
+    // 春季摄影之旅 (activity_id: 1)
+    { activity_id: 1, user_id: 4, status: 'registered', created_at: '2025-12-08 10:30:00' },
+    { activity_id: 1, user_id: 5, status: 'registered', created_at: '2025-12-09 14:20:00' },
+    { activity_id: 1, user_id: 6, status: 'registered', created_at: '2025-12-10 09:15:00' },
+    { activity_id: 1, user_id: 7, status: 'registered', created_at: '2025-12-11 16:45:00' },
+    { activity_id: 1, user_id: 8, status: 'cancelled', created_at: '2025-12-07 11:20:00' },
+
+    // 登山挑战赛 (activity_id: 2)
+    { activity_id: 2, user_id: 4, status: 'registered', created_at: '2025-12-05 13:30:00' },
+    { activity_id: 2, user_id: 6, status: 'registered', created_at: '2025-12-06 10:40:00' },
+    { activity_id: 2, user_id: 8, status: 'registered', created_at: '2025-12-07 15:55:00' },
+
+    // 户外野营体验 (activity_id: 3)
+    { activity_id: 3, user_id: 5, status: 'registered', created_at: '2025-12-09 11:10:00' },
+    { activity_id: 3, user_id: 7, status: 'registered', created_at: '2025-12-10 14:25:00' },
+    { activity_id: 3, user_id: 4, status: 'registered', created_at: '2025-12-11 09:30:00' },
+    { activity_id: 3, user_id: 6, status: 'cancelled', created_at: '2025-12-08 16:40:00' },
+
+    // 徒步探险之旅 (activity_id: 4)
+    { activity_id: 4, user_id: 8, status: 'registered', created_at: '2025-12-12 10:15:00' },
+    { activity_id: 4, user_id: 5, status: 'registered', created_at: '2025-12-13 13:45:00' },
+    { activity_id: 4, user_id: 7, status: 'registered', created_at: '2025-12-14 11:20:00' }
+  ];
+
+  activityParticipants.forEach(participant => {
+    activityParticipantStmt.run(
+      participant.activity_id,
+      participant.user_id,
+      participant.status,
+      participant.created_at
+    );
+  });
+  console.log('✓ 生成活动报名数据');
+
+  // 12. 生成新闻分类数据
   const newsCategories = [
     { name: '旅游资讯', description: '最新旅游行业动态和资讯', sort_order: 1 },
     { name: '景点推荐', description: '精选景点推荐和游记分享', sort_order: 2 },
@@ -1236,6 +1374,8 @@ const init = async () => {
     console.log('- 订单：5个（包含不同状态）');
     console.log('- 购物车：4个商品');
     console.log('- 活动：4个');
+    console.log('- 酒店预订：6个（包含pending/confirmed/completed/cancelled状态）');
+    console.log('- 活动报名：15个（包含registered/cancelled状态）');
   } catch (error) {
     console.error('初始化数据库失败：', error);
     process.exit(1);
