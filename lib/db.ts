@@ -46,12 +46,30 @@ try {
 }
 db.pragma('foreign_keys = ON')  // 启用外键约束
 
-// 检查数据库是否已初始化
+// 检查数据库是否已初始化（检查所有关键表）
 function isDatabaseInitialized(): boolean {
   try {
-    const result = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='profiles'").get()
-    return !!result
+    // 检查所有关键表是否存在
+    const requiredTables = [
+      'profiles', 'categories', 'spots', 'tickets', 'activities',
+      'hotels', 'hotel_rooms', 'orders', 'news', 'news_categories'
+    ]
+
+    for (const tableName of requiredTables) {
+      const result = db.prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name=?"
+      ).get(tableName)
+
+      if (!result) {
+        console.log(`⚠️  缺少表: ${tableName}`)
+        return false
+      }
+    }
+
+    console.log('✅ 数据库已初始化，所有表都存在')
+    return true
   } catch (error) {
+    console.error('❌ 检查数据库初始化状态失败:', error)
     return false
   }
 }
