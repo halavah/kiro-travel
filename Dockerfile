@@ -18,6 +18,14 @@ RUN npm ci
 # 构建阶段
 FROM base AS builder
 WORKDIR /app
+
+# 安装编译工具（lightningcss 需要在构建时重新编译原生模块）
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
