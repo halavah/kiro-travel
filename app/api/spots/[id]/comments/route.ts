@@ -101,19 +101,6 @@ export async function POST(
       )
     }
 
-    // 检查是否已经评论过
-    const existingComment = dbGet(
-      'SELECT id FROM spot_comments WHERE spot_id = ? AND user_id = ?',
-      [id, user.id]
-    )
-
-    if (existingComment) {
-      return NextResponse.json(
-        { success: false, error: '您已经评论过该景点' },
-        { status: 400 }
-      )
-    }
-
     // 添加评论
     const { lastInsertRowid } = dbRun(`
       INSERT INTO spot_comments (spot_id, user_id, content, rating)
