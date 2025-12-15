@@ -132,7 +132,14 @@ export default function AdminNewsPage() {
     if (!editingNews) return
 
     try {
+      if (!formData.title || !formData.content) {
+        toast.error('请填写标题和内容')
+        return
+      }
+
       const token = localStorage.getItem('token')
+      console.log('[Frontend] Updating news with ID:', editingNews.id)
+
       const res = await fetch(`/api/news/${editingNews.id}`, {
         method: 'PUT',
         headers: {
@@ -147,13 +154,14 @@ export default function AdminNewsPage() {
 
       if (!res.ok) {
         const data = await res.json()
+        console.error('[Frontend] Update failed:', data)
         throw new Error(data.details || data.error || 'Failed to update news')
       }
 
       toast.success('新闻更新成功')
       setEditingNews(null)
       resetForm()
-      fetchNews()
+      await fetchNews()
     } catch (error) {
       console.error('Error updating news:', error)
       toast.error(error instanceof Error ? error.message : '更新新闻失败')
@@ -185,7 +193,13 @@ export default function AdminNewsPage() {
   const handleTogglePublish = async (id: string, currentPublished: number) => {
     try {
       const newsItem = news.find(n => n.id === id)
-      if (!newsItem) return
+      if (!newsItem) {
+        toast.error('新闻不存在，请刷新页面')
+        await fetchNews()
+        return
+      }
+
+      console.log('[Frontend] Toggling publish for news ID:', id)
 
       const token = localStorage.getItem('token')
       const res = await fetch(`/api/news/${id}`, {
@@ -206,11 +220,12 @@ export default function AdminNewsPage() {
 
       if (!res.ok) {
         const data = await res.json()
+        console.error('[Frontend] Toggle publish failed:', data)
         throw new Error(data.details || data.error || 'Failed to toggle publish status')
       }
 
       toast.success(`新闻已${currentPublished ? '取消发布' : '发布'}`)
-      fetchNews()
+      await fetchNews()
     } catch (error) {
       console.error('Error toggling publish status:', error)
       toast.error(error instanceof Error ? error.message : '状态切换失败')
@@ -225,11 +240,14 @@ export default function AdminNewsPage() {
 
     try {
       const token = localStorage.getItem('token')
-      await Promise.all(selectedNewsIds.map(async (id) => {
+      const results = await Promise.allSettled(selectedNewsIds.map(async (id) => {
         const newsItem = news.find(n => n.id === id)
-        if (!newsItem) return
+        if (!newsItem) {
+          console.warn('[Frontend] News not found for batch operation:', id)
+          return
+        }
 
-        await fetch(`/api/news/${id}`, {
+        const res = await fetch(`/api/news/${id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -244,11 +262,23 @@ export default function AdminNewsPage() {
             is_published: publish ? 1 : 0
           })
         })
+
+        if (!res.ok) {
+          const data = await res.json()
+          console.error('[Frontend] Batch operation failed for ID:', id, data)
+          throw new Error(data.details || data.error)
+        }
       }))
 
-      toast.success(`已批量${publish ? '发布' : '取消发布'}`)
+      const failed = results.filter(r => r.status === 'rejected').length
+      if (failed > 0) {
+        toast.error(`批量操作完成，但有 ${failed} 项失败`)
+      } else {
+        toast.success(`已批量${publish ? '发布' : '取消发布'}`)
+      }
+
       setSelectedNewsIds([])
-      fetchNews()
+      await fetchNews()
     } catch (error) {
       console.error('Error batch updating:', error)
       toast.error('批量操作失败')

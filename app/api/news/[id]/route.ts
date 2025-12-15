@@ -5,10 +5,10 @@ import { validateAuth, checkRole } from '@/lib/auth'
 // GET /api/news/[id] - 获取新闻详情
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id
+    const { id } = await params
 
     const news = dbGet(`
       SELECT n.*, nc.name as category_name, p.full_name as author_name
@@ -44,7 +44,7 @@ export async function GET(
 // PUT /api/news/[id] - 更新新闻
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error } = await validateAuth(request)
@@ -63,14 +63,15 @@ export async function PUT(
       )
     }
 
-    const id = params.id
+    const { id } = await params
     const body = await request.json()
     const { title, content, summary, cover_image, category_id, is_published } = body
 
-    console.log('[News Update] Request body:', {
+    console.log('[News Update] Request received:', {
       id,
+      id_type: typeof id,
       title,
-      content: content?.substring(0, 50),
+      content_length: content?.length,
       summary,
       cover_image,
       category_id,
@@ -87,10 +88,14 @@ export async function PUT(
     }
 
     // 如果状态变为已发布，更新发布时间
+    console.log('[News Update] Checking if news exists with id:', id)
     const currentNews = dbGet(`SELECT is_published FROM news WHERE id = ?`, [id]) as any
+    console.log('[News Update] Current news from DB:', currentNews)
+
     if (!currentNews) {
+      console.error('[News Update] News not found in database with id:', id)
       return NextResponse.json(
-        { success: false, error: '新闻不存在' },
+        { success: false, error: '新闻不存在', details: `未找到ID为 ${id} 的新闻` },
         { status: 404 }
       )
     }
@@ -166,7 +171,7 @@ export async function PUT(
 // DELETE /api/news/[id] - 删除新闻
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error } = await validateAuth(request)
@@ -185,7 +190,7 @@ export async function DELETE(
       )
     }
 
-    const id = params.id
+    const { id } = await params
 
     dbRun(`DELETE FROM news WHERE id = ?`, [id])
 
