@@ -3,6 +3,9 @@ import { NewsDetail } from "@/components/news/news-detail"
 import type { News } from "@/lib/types"
 import { dbGet, dbQuery, dbRun } from "@/lib/db-utils"
 
+// 强制动态渲染，避免构建时查询数据库
+export const dynamic = 'force-dynamic'
+
 export default async function NewsDetailPage({
   params,
 }: {

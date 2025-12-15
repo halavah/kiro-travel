@@ -4,6 +4,9 @@ import { verifyToken } from "@/lib/auth"
 import { dbQuery } from "@/lib/db-utils"
 import { ActivitiesParticipationList } from "@/components/profile/activities-participation-list"
 
+// 强制动态渲染，避免构建时查询数据库
+export const dynamic = 'force-dynamic'
+
 export default async function MyActivitiesPage() {
   // 验证用户登录
   const cookieStore = await cookies()

@@ -3,6 +3,7 @@ import { verifyToken } from '@/lib/auth'
 import { dbGet, dbRun } from '@/lib/db-utils'
 
 // POST - 取消预订
+// 推荐使用此端点进行预订取消操作（符合 REST 规范）
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -29,27 +30,31 @@ export async function POST(
     `, [id])
 
     if (!booking) {
-      return NextResponse.json({ error: 'Booking not found' }, { status: 404 })
+      return NextResponse.json({ error: '预订不存在' }, { status: 404 })
     }
 
     if (booking.user_id !== decoded.userId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: '无权操作此预订' }, { status: 403 })
     }
 
-    if (booking.status !== 'pending') {
-      return NextResponse.json({ error: 'Booking cannot be cancelled' }, { status: 400 })
+    if (booking.status === 'cancelled') {
+      return NextResponse.json({ error: '预订已取消' }, { status: 400 })
+    }
+
+    if (booking.status === 'completed') {
+      return NextResponse.json({ error: '已完成的预订无法取消' }, { status: 400 })
     }
 
     // 更新预订状态为已取消
     dbRun(`
       UPDATE hotel_bookings
-      SET status = 'cancelled'
+      SET status = 'cancelled', updated_at = datetime('now')
       WHERE id = ?
     `, [id])
 
     return NextResponse.json({
       success: true,
-      message: 'Booking cancelled successfully'
+      message: '预订已取消'
     })
 
   } catch (error) {

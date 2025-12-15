@@ -1,0 +1,56 @@
+# 依赖
+node_modules
+.pnp
+.pnp.js
+
+# 测试
+coverage
+
+# Next.js
+.next
+out
+
+# 生产
+build
+
+# 环境变量
+.env*.local
+.env
+
+# 调试日志
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 操作系统
+.DS_Store
+*.pem
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Git
+.git
+.gitignore
+
+# 数据库（开发环境）
+data/*.db
+data/*.sqlite
+*.sqlite
+*.sqlite3
+
+# 文档
+docs
+README.md
+
+# 部署配置
+.vercel
+render.yaml
+.github
+
+# 其他
+*.log
+.cache

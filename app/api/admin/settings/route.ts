@@ -1,10 +1,71 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import { getTokenFromRequest } from '@/lib/middleware'
-import { dbGet, dbRun, dbQuery } from '@/lib/db-utils'
-import { writeFileSync, mkdirSync, existsSync } from 'fs'
+import { dbGet } from '@/lib/db-utils'
+import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { join } from 'path'
-import { execSync } from 'child_process'
+
+// 设置文件路径
+const SETTINGS_FILE = join(process.cwd(), 'data', 'settings.json')
+
+// 默认设置
+const DEFAULT_SETTINGS = {
+  site: {
+    name: '畅游天下',
+    description: '您的旅行好帮手',
+    logoUrl: '',
+    contactEmail: 'support@changyou.com',
+    contactPhone: '400-123-4567',
+    address: '北京市朝阳区xxx大厦'
+  },
+  features: {
+    enableRegistration: true,
+    enableComments: true,
+    enableFavorites: true,
+    requireEmailVerification: false
+  },
+  notifications: {
+    newOrderEmail: true,
+    newRegistrationEmail: true,
+    lowStockAlert: true,
+    adminEmail: 'admin@changyou.com'
+  },
+  backup: {
+    autoBackup: true,
+    backupFrequency: 'daily',
+    lastBackup: '',
+    backupPath: '/backups'
+  }
+}
+
+// 读取设置
+function loadSettings() {
+  try {
+    if (existsSync(SETTINGS_FILE)) {
+      const data = readFileSync(SETTINGS_FILE, 'utf-8')
+      return JSON.parse(data)
+    }
+  } catch (error) {
+    console.error('Error loading settings:', error)
+  }
+  return DEFAULT_SETTINGS
+}
+
+// 保存设置
+function saveSettings(settings: any) {
+  try {
+    const dir = join(process.cwd(), 'data')
+    if (!existsSync(dir)) {
+      const { mkdirSync } = require('fs')
+      mkdirSync(dir, { recursive: true })
+    }
+    writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf-8')
+    return true
+  } catch (error) {
+    console.error('Error saving settings:', error)
+    return false
+  }
+}
 
 // GET - 获取系统设置（管理员）
 export async function GET(req: NextRequest) {
@@ -29,36 +90,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // 这里可以从数据库或配置文件中获取设置
-    // 目前返回默认设置
-    const settings = {
-      site: {
-        name: '畅游天下',
-        description: '您的旅行好帮手',
-        logoUrl: '',
-        contactEmail: 'support@changyou.com',
-        contactPhone: '400-123-4567',
-        address: '北京市朝阳区xxx大厦'
-      },
-      features: {
-        enableRegistration: true,
-        enableComments: true,
-        enableFavorites: true,
-        requireEmailVerification: false
-      },
-      notifications: {
-        newOrderEmail: true,
-        newRegistrationEmail: true,
-        lowStockAlert: true,
-        adminEmail: 'admin@changyou.com'
-      },
-      backup: {
-        autoBackup: true,
-        backupFrequency: 'daily',
-        lastBackup: '',
-        backupPath: '/backups'
-      }
-    }
+    // 从文件加载设置
+    const settings = loadSettings()
 
     return NextResponse.json({ settings })
 
@@ -93,8 +126,15 @@ export async function POST(req: NextRequest) {
 
     const settings = await req.json()
 
-    // 这里可以将设置保存到数据库或配置文件中
-    // 目前只是返回成功
+    // 保存设置到文件
+    const saved = saveSettings(settings)
+
+    if (!saved) {
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to save settings'
+      }, { status: 500 })
+    }
 
     return NextResponse.json({
       success: true,

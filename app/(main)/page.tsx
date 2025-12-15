@@ -6,6 +6,9 @@ import { MapPin, Star, ArrowRight, Ticket, Hotel, Compass, TrendingUp, Users, Aw
 import type { Spot, Activity, News } from "@/lib/types"
 import { dbQuery } from "@/lib/db-utils"
 
+// 强制动态渲染，避免构建时查询数据库
+export const dynamic = 'force-dynamic'
+
 export default async function HomePage() {
   // 获取推荐景点
   const recommendedSpotsRaw = dbQuery(`

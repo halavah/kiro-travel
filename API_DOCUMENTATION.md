@@ -498,7 +498,7 @@ UNIQUE(spot_id, user_id)
     }
   }
   ```
-- **注意**：favorites 和 comments 当前返回 0
+- **注意**：所有统计数据均从数据库实时查询
 
 ---
 
@@ -1078,8 +1078,8 @@ UNIQUE(spot_id, user_id)
   - `limit`: number (default: 10)
   - `search`: string (optional)
   - `location`: string (optional)
-  - `min_price`: number (optional)
-  - `max_price`: number (optional)
+  - `min_price`: number (optional) - 暂不可用，需数据库添加字段
+  - `max_price`: number (optional) - 暂不可用，需数据库添加字段
   - `star_rating`: number (optional)
 - **响应**：
   ```json
@@ -1104,7 +1104,7 @@ UNIQUE(spot_id, user_id)
     }
   }
   ```
-- **问题**：查询条件中使用了 price_min 和 price_max 字段，但数据库表中没有这些字段
+- **注意**：价格过滤功能已注释，需数据库添加 price_min 和 price_max 字段后启用
 
 #### POST /api/hotels
 - **描述**：创建新酒店
@@ -1124,7 +1124,7 @@ UNIQUE(spot_id, user_id)
     "contact_phone": "string (optional)"
   }
   ```
-- **问题**：API 使用 hotel_${Date.now()} 作为ID，但数据库表使用 AUTOINCREMENT
+- **注意**：使用 AUTOINCREMENT 自动生成 ID
 
 #### GET /api/hotels/[id]
 - **描述**：获取酒店详情
@@ -1191,9 +1191,7 @@ UNIQUE(spot_id, user_id)
     ]
   }
   ```
-- **问题**：
-  - 查询条件使用 stock > 0，但数据库表中没有 stock 字段
-  - WHERE 条件使用 'active'，但数据库表的房间状态是 'available'
+- **注意**：使用 status = 'available' 过滤可用房间
 
 #### POST /api/hotels/[id]/rooms
 - **描述**：添加房间
@@ -1276,14 +1274,15 @@ UNIQUE(spot_id, user_id)
     "message": "预订已取消"
   }
   ```
+- **注意**：@deprecated 推荐使用 POST /api/bookings/[id]/cancel，保留此端点仅为向后兼容
 
 #### POST /api/bookings/[id]/cancel
-- **描述**：取消预订（备用端点）
+- **描述**：取消预订（推荐端点，符合REST规范）
 - **权限**：user
 - **路径参数**：
   - `id`: number - 预订ID
 - **响应**：同 DELETE
-- **注意**：状态必须是 'pending' 才能取消
+- **注意**：仅 pending 和 confirmed 状态的预订可以取消
 
 ---
 
@@ -1297,7 +1296,7 @@ UNIQUE(spot_id, user_id)
   - `limit`: number (default: 10)
   - `search`: string (optional)
   - `location`: string (optional)
-  - `activity_type`: string (optional)
+  - `activity_type`: string (optional) - 暂不可用，需数据库添加字段
   - `is_active`: boolean (optional)
 - **响应**：
   ```json
@@ -1326,7 +1325,7 @@ UNIQUE(spot_id, user_id)
     }
   }
   ```
-- **问题**：查询条件使用 activity_type，但数据库表中没有此字段
+- **注意**：活动类型过滤功能已注释，需数据库添加 activity_type 字段后启用
 
 #### POST /api/activities
 - **描述**：创建新活动
@@ -1345,7 +1344,7 @@ UNIQUE(spot_id, user_id)
     "max_participants": "number (optional)"
   }
   ```
-- **问题**：API 使用 activity_${Date.now()} 作为ID，但数据库表使用 AUTOINCREMENT
+- **注意**：使用 AUTOINCREMENT 自动生成 ID，activity_type 字段暂不支持
 
 #### GET /api/activities/[id]
 - **描述**：获取活动详情
@@ -1635,8 +1634,7 @@ UNIQUE(spot_id, user_id)
 - **请求体**：
   ```json
   {
-    "role": "string (optional)",
-    "status": "string (optional)"
+    "role": "string (optional)"
   }
   ```
 - **响应**：
@@ -1646,8 +1644,9 @@ UNIQUE(spot_id, user_id)
     "message": "User updated successfully"
   }
   ```
-- **注意**：不能修改自己的管理员角色
-- **问题**：更新 status 字段，但数据库表中没有此字段
+- **注意**：
+  - 不能修改自己的管理员角色
+  - status 字段暂不支持，需数据库添加字段
 
 #### GET /api/admin/spots
 - **描述**：获取所有景点列表
@@ -1808,18 +1807,15 @@ UNIQUE(spot_id, user_id)
     "location": "string (required)",
     "address": "string (optional)",
     "rating": "number (required)",
-    "price_range": "string (optional)",
     "amenities": ["string"] (optional),
     "images": ["string"] (optional),
     "contact_phone": "string (optional)",
     "status": "string (optional)"
   }
   ```
-- **问题**：
-  - 使用 UUID 作为ID
-  - 插入 created_by 字段，但数据库表中没有此字段
-  - 插入 price_range 字段，但数据库表中没有此字段
-  - 代码中引用了未定义的 contact_email 变量
+- **注意**：
+  - 使用 AUTOINCREMENT 自动生成 ID
+  - created_by 和 price_range 字段暂不支持，需数据库添加
 
 #### PATCH /api/admin/hotels/[id]
 - **描述**：更新酒店
@@ -1827,7 +1823,7 @@ UNIQUE(spot_id, user_id)
 - **路径参数**：
   - `id`: string - 酒店ID
 - **请求体**：所有字段可选
-- **问题**：更新 facilities 字段，但数据库表中是 amenities
+- **注意**：使用 amenities 字段（不是 facilities），contact_email 和 price_range 暂不支持
 
 #### DELETE /api/admin/hotels/[id]
 - **描述**：删除酒店
@@ -2153,7 +2149,7 @@ UNIQUE(spot_id, user_id)
     }
   }
   ```
-- **注意**：当前返回硬编码的默认设置
+- **注意**：设置存储在 data/settings.json 文件中
 
 #### POST /api/admin/settings
 - **描述**：保存系统设置
@@ -2166,25 +2162,23 @@ UNIQUE(spot_id, user_id)
     "message": "Settings saved successfully"
   }
   ```
-- **注意**：当前只返回成功，未实际保存
+- **注意**：设置保存到 data/settings.json 文件
 
 ---
 
 ## 已知问题
 
-### 1. 数据库字段不匹配
+### 1. 数据库字段缺失（需要数据库迁移）
 
 #### 酒店模块
-- **问题**：`/api/hotels` GET 请求查询条件使用 `price_min` 和 `price_max` 字段，但数据库表中没有这些字段
-- **位置**：`/app/api/hotels/route.ts:31-37`
-- **影响**：价格过滤功能无法正常工作
+- **问题**：数据库表缺少 `price_min` 和 `price_max` 字段
+- **影响**：价格过滤功能已禁用（代码已注释）
+- **解决方案**：添加字段后启用相关代码
 
 #### 酒店房间模块
-- **问题**：
-  1. `/api/hotels/[id]/rooms` GET 请求查询条件使用 `stock > 0`，但数据库表中没有 `stock` 字段
-  2. WHERE 条件使用 `status = 'active'`，但数据库表的房间状态值是 `'available'`
-- **位置**：`/app/api/hotels/[id]/rooms/route.ts:15-19`
-- **影响**：房间可用性过滤功能无法正常工作
+- **问题**：数据库表缺少 `stock` 字段
+- **影响**：无法按库存过滤房间，当前使用 status 字段判断可用性
+- **解决方案**：添加字段后支持库存管理
 
 #### 活动模块
 - **问题**：`/api/activities` GET 请求查询条件使用 `activity_type`，但数据库表中没有此字段
@@ -2245,42 +2239,37 @@ UNIQUE(spot_id, user_id)
 ### 4. 数据验证问题
 
 #### 订单创建
-- **问题**：`/api/orders` POST 请求没有验证必填字段（直接预订模式）
-- **位置**：`/app/api/orders/route.ts:82-119`
-- **影响**：可能导致创建不完整的订单
-
-#### 酒店创建
-- **问题**：`/api/admin/hotels` POST 请求中存在未定义的变量 `contact_email`
-- **位置**：`/app/api/admin/hotels/route.ts:133`
-- **影响**：会导致运行时错误
-
-### 5. 功能不完整
-
-#### 统计数据
-- **问题**：`/api/profile/stats` 返回的 `favorites` 和 `comments` 硬编码为 0
-- **位置**：`/app/api/profile/stats/route.ts:44-48`
-- **影响**：用户无法看到真实的收藏和评论数量
-
-#### 系统设置
-- **问题**：`/api/admin/settings` GET 返回硬编码的默认设置，POST 不实际保存
-- **位置**：`/app/api/admin/settings/route.ts`
-- **影响**：系统设置功能无法正常使用
-
-### 6. API 不一致
-
-#### 预订取消
-- **问题**：存在两个取消预订的端点
-  - `DELETE /api/bookings/[id]`
-  - `POST /api/bookings/[id]/cancel`
-- **影响**：API 设计不统一，可能导致混淆
+- **状态**：✅ 已修复
+- **修复内容**：添加了直接预订模式的必填字段验证
 
 ---
 
-## 修复建议
+## 已完成的修复
 
-### 1. 数据库字段修复
+### Phase 1（紧急修复） - ✅ 已完成
+- ✅ ID 类型不匹配：统一使用 AUTOINCREMENT（酒店、活动、房间等模块）
+- ✅ 未定义变量：修复了 contact_email 等未定义变量
+- ✅ 权限检查：添加了用户 API 权限检查
+- ✅ 字段名修正：修复了 facilities→amenities，status 值等
 
-#### 优先级：高
+### Phase 2（重要修复） - ✅ 已完成
+- ✅ 酒店价格过滤：注释了不可用功能，添加 TODO
+- ✅ 酒店房间状态：修复为正确的 'available' 状态
+- ✅ 活动类型过滤：注释了不可用功能，添加 TODO
+- ✅ 用户状态管理：注释了不可用功能，添加 TODO
+- ✅ 酒店字段名：修复 amenities、phone 字段名
+- ✅ 订单验证：添加直接预订模式必填字段验证
+
+### Phase 3（优化完善） - ✅ 已完成
+- ✅ 统计功能：实现了 favorites 和 comments 的实时查询
+- ✅ 系统设置：实现了基于 JSON 文件的持久化存储
+- ✅ API 设计：统一预订取消端点，标记 DELETE 为 deprecated
+
+## 待完成的修复
+
+### 数据库迁移建议
+
+#### 优先级：中
 
 **酒店表添加价格字段：**
 ```sql
@@ -2288,10 +2277,9 @@ ALTER TABLE hotels ADD COLUMN price_min DECIMAL(10, 2);
 ALTER TABLE hotels ADD COLUMN price_max DECIMAL(10, 2);
 ```
 
-**酒店房间表添加库存字段并修复状态值：**
+**酒店房间表添加库存字段：**
 ```sql
 ALTER TABLE hotel_rooms ADD COLUMN stock INTEGER DEFAULT 1;
-UPDATE hotel_rooms SET status = 'active' WHERE status = 'available';
 ```
 
 **活动表添加类型字段：**
@@ -2310,150 +2298,23 @@ ALTER TABLE spots ADD COLUMN created_by INTEGER;
 ALTER TABLE spots ADD FOREIGN KEY (created_by) REFERENCES profiles(id);
 ```
 
-**酒店表添加创建者和价格范围字段：**
+**酒店表添加扩展字段：**
 ```sql
 ALTER TABLE hotels ADD COLUMN created_by INTEGER;
 ALTER TABLE hotels ADD COLUMN price_range TEXT;
+ALTER TABLE hotels ADD COLUMN contact_email TEXT;
 ALTER TABLE hotels ADD FOREIGN KEY (created_by) REFERENCES profiles(id);
 ```
 
-### 2. ID 类型修复
-
-#### 优先级：高
-
-**选项 A：统一使用 INTEGER AUTOINCREMENT**
-- 修改 API 代码，移除手动指定 ID 的逻辑
-- 让数据库自动生成 ID
-
-**选项 B：统一使用 UUID**
-- 修改数据库表结构，将所有主键改为 TEXT 类型
-- 确保所有 API 使用 UUID
-
-**推荐：选项 A**，因为修改成本较低，且 INTEGER 类型性能更好
-
-**需要修改的文件：**
-- `/app/api/hotels/route.ts:112`
-- `/app/api/hotels/[id]/rooms/route.ts:104`
-- `/app/api/activities/route.ts:117`
-- `/app/api/news/route.ts:98`
-- `/app/api/admin/spots/route.ts:134`
-- `/app/api/admin/hotels/route.ts:116`
-
-**修改示例：**
-```typescript
-// 错误的做法
-const hotelId = randomUUID()
-dbRun(`INSERT INTO hotels (id, ...) VALUES (?, ...)`, [hotelId, ...])
-
-// 正确的做法
-const { lastInsertRowid } = dbRun(`INSERT INTO hotels (...) VALUES (...)`, [...])
-const hotel = dbGet('SELECT * FROM hotels WHERE id = ?', [lastInsertRowid])
-```
-
-### 3. 权限检查修复
-
-#### 优先级：高
-
-**修改 `/app/api/users/route.ts`：**
-```typescript
-// GET /api/users - 添加权限检查
-export async function GET(request: NextRequest) {
-  const { user, error } = await validateAuth(request)
-
-  if (!user || user.role !== 'admin') {
-    return NextResponse.json(
-      { success: false, error: '需要管理员权限' },
-      { status: 403 }
-    )
-  }
-  // ... 原有逻辑
-}
-
-// POST /api/users - 限制为管理员或移除此端点
-export async function POST(request: NextRequest) {
-  const { user, error } = await validateAuth(request)
-
-  if (!user || user.role !== 'admin') {
-    return NextResponse.json(
-      { success: false, error: '需要管理员权限' },
-      { status: 403 }
-    )
-  }
-  // ... 原有逻辑
-}
-```
-
-### 4. 数据验证修复
-
-#### 优先级：中
-
-**修改 `/app/api/admin/hotels/route.ts`：**
-```typescript
-// 第 133 行，移除未定义的变量
-const sql = `
-  INSERT INTO hotels (
-    id, name, description, location, address, rating,
-    amenities, images, contact_phone, status, created_at
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-`
-
-const { lastInsertRowid } = dbRun(sql, [
-  name,
-  description || null,
-  location,
-  address || null,
-  parseFloat(rating),
-  JSON.stringify(amenities || []),
-  JSON.stringify(images || []),
-  contact_phone || null,
-  status || 'active'
-])
-```
-
-**修改 `/app/api/admin/hotels/[id]/route.ts`：**
-```typescript
-// 第 85-87 行，修正字段名
-if (amenities !== undefined) {
-  updateFields.push('amenities = ?')
-  updateValues.push(JSON.stringify(amenities))
-}
-```
-
-### 5. 功能完善
-
-#### 优先级：中
-
-**修改 `/app/api/profile/stats/route.ts`：**
-```typescript
-// 第 44-48 行，查询真实数据
-const favoritesResult = dbQuery(`
-  SELECT COUNT(*) as count
-  FROM spot_favorites
-  WHERE user_id = ?
-`, [decoded.userId])
-const favorites = favoritesResult[0]?.count || 0
-
-const commentsResult = dbQuery(`
-  SELECT COUNT(*) as count
-  FROM spot_comments
-  WHERE user_id = ?
-`, [decoded.userId])
-const comments = commentsResult[0]?.count || 0
-```
-
-**实现 `/app/api/admin/settings`：**
-- 创建 `system_settings` 表
-- 实现真实的保存和读取逻辑
-
-### 6. API 设计优化
+### API 优化建议
 
 #### 优先级：低
 
-**统一预订取消端点：**
-- 移除 `DELETE /api/bookings/[id]`
-- 统一使用 `POST /api/bookings/[id]/cancel`
+**新闻 ID 格式统一：**
+- 建议将 `news_${Date.now()}` 改为使用 UUID
+- 位置：`/app/api/news/route.ts:98`
 
-**统一错误响应格式：**
+**错误响应格式统一：**
 ```json
 {
   "success": false,
@@ -2461,23 +2322,6 @@ const comments = commentsResult[0]?.count || 0
   "code": "ERROR_CODE"
 }
 ```
-
-### 7. 建议的修复顺序
-
-1. **第一阶段（紧急）**：
-   - 修复 ID 类型不匹配问题
-   - 修复酒店模块的代码错误（未定义变量）
-   - 添加用户 API 权限检查
-
-2. **第二阶段（重要）**：
-   - 添加缺失的数据库字段
-   - 修复字段名不匹配问题
-   - 完善数据验证
-
-3. **第三阶段（优化）**：
-   - 完善统计功能
-   - 实现系统设置功能
-   - 统一 API 设计
 
 ### 8. 测试建议
 
@@ -2546,3 +2390,9 @@ const comments = commentsResult[0]?.count || 0
 ## 文档变更历史
 
 - **2025-12-15**: 初始版本，完成系统分析和文档生成
+- **2025-12-15**: 更新文档反映Phase 1-3修复完成状态
+  - Phase 1: 修复ID类型不匹配、未定义变量、权限检查问题
+  - Phase 2: 修复字段名不匹配、添加数据验证
+  - Phase 3: 实现统计功能、系统设置持久化、统一API设计
+  - 更新所有相关API端点的注释说明
+  - 重新组织"已知问题"部分，标记已完成的修复

@@ -3,6 +3,9 @@ import { TicketsFilter } from "@/components/tickets/tickets-filter"
 import type { Ticket } from "@/lib/types"
 import { dbQuery } from "@/lib/db-utils"
 
+// 强制动态渲染，避免构建时查询数据库
+export const dynamic = 'force-dynamic'
+
 export default async function TicketsPage({
   searchParams,
 }: {

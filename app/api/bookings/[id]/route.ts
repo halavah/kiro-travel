@@ -3,6 +3,8 @@ import { verifyToken } from '@/lib/auth'
 import { dbGet, dbRun } from '@/lib/db-utils'
 
 // DELETE - 取消预订
+// @deprecated 推荐使用 POST /api/bookings/[id]/cancel 端点
+// 保留此端点是为了向后兼容，内部实现与 cancel 端点相同
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -47,7 +49,7 @@ export async function DELETE(
     // 更新预订状态为已取消
     dbRun(`
       UPDATE hotel_bookings
-      SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP
+      SET status = 'cancelled', updated_at = datetime('now')
       WHERE id = ?
     `, [id])
 

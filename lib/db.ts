@@ -46,6 +46,16 @@ try {
 }
 db.pragma('foreign_keys = ON')  // 启用外键约束
 
+// 检查数据库是否已初始化
+function isDatabaseInitialized(): boolean {
+  try {
+    const result = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='profiles'").get()
+    return !!result
+  } catch (error) {
+    return false
+  }
+}
+
 // 数据库初始化函数
 export function initDatabase() {
   try {
@@ -56,6 +66,17 @@ export function initDatabase() {
   } catch (error) {
     console.error('❌ 数据库初始化失败:', error)
     throw error
+  }
+}
+
+// 自动初始化数据库（如果表不存在）
+if (!isDatabaseInitialized()) {
+  console.log('🔧 数据库未初始化，开始自动初始化...')
+  try {
+    initDatabase()
+  } catch (error) {
+    console.error('❌ 自动初始化数据库失败:', error)
+    // 不抛出错误，允许构建继续（运行时会由 dynamic 路由处理）
   }
 }
 
