@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import { ShoppingCart, Trash2, Plus, Minus, Loader2, Ticket, MapPin } from "lucide-react"
 import type { CartItem } from "@/lib/types"
 import { toast } from "sonner"
+import { useCart } from "@/contexts/cart-context"
 
 // Fetcher 函数
 const fetcher = (url: string) => {
@@ -30,6 +31,7 @@ const fetcher = (url: string) => {
 
 export function CartContent() {
   const router = useRouter()
+  const { refreshCart } = useCart()
   const { data, error, isLoading, mutate } = useSWR('/api/cart', fetcher)
   const [selectedIds, setSelectedIds] = useState<number[]>([])
   const [loadingId, setLoadingId] = useState<number | null>(null)
@@ -109,6 +111,7 @@ export function CartContent() {
       // 更新本地状态
       setSelectedIds((prev) => prev.filter((id) => id !== itemId))
       mutate()
+      await refreshCart() // 刷新购物车数量
       toast.success("已移除")
     } catch (error) {
       toast.error("删除失败")
@@ -154,6 +157,7 @@ export function CartContent() {
 
       // 刷新购物车数据
       mutate()
+      await refreshCart() // 刷新购物车数量
 
       toast.success("订单创建成功")
       router.push(`/orders/${result.data.order.id}`)

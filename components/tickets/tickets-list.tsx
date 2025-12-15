@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { MapPin, Ticket, ShoppingCart, Loader2, Calendar } from "lucide-react"
 import type { Ticket as TicketType, Spot } from "@/lib/types"
 import { toast } from "sonner"
+import { useCart } from "@/contexts/cart-context"
 
 interface TicketWithSpot extends TicketType {
   spot: Spot & { category?: { name: string } }
@@ -23,6 +24,7 @@ interface TicketsListProps {
 
 export function TicketsList({ tickets, totalCount }: TicketsListProps) {
   const router = useRouter()
+  const { refreshCart } = useCart()
   const [loadingId, setLoadingId] = useState<string | null>(null)
 
   const handleAddToCart = async (ticket: TicketWithSpot, e: React.MouseEvent) => {
@@ -53,6 +55,7 @@ export function TicketsList({ tickets, totalCount }: TicketsListProps) {
 
       if (!response.ok) throw new Error('添加失败')
 
+      await refreshCart() // 刷新购物车数量
       toast.success("已添加到购物车")
       router.refresh()
     } catch (error) {

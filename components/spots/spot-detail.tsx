@@ -23,6 +23,7 @@ import {
 import Link from "next/link"
 import type { Spot, Ticket as TicketType } from "@/lib/types"
 import { toast } from "sonner"
+import { useCart } from "@/contexts/cart-context"
 
 interface SpotDetailProps {
   spot: Spot
@@ -32,6 +33,7 @@ interface SpotDetailProps {
 
 export function SpotDetail({ spot, tickets, isLoggedIn }: SpotDetailProps) {
   const router = useRouter()
+  const { refreshCart } = useCart()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isLiked, setIsLiked] = useState(spot.is_liked || false)
   const [isFavorited, setIsFavorited] = useState(spot.is_favorited || false)
@@ -136,6 +138,7 @@ export function SpotDetail({ spot, tickets, isLoggedIn }: SpotDetailProps) {
         throw new Error('添加失败')
       }
 
+      await refreshCart() // 刷新购物车数量
       toast.success("已添加到购物车")
       router.refresh()
     } catch (error) {
