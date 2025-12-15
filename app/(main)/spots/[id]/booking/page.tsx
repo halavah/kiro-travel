@@ -14,6 +14,7 @@ import { ArrowLeft, Ticket, Calendar, User, Loader2, ShoppingCart } from 'lucide
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/auth-context'
+import { useCart } from '@/contexts/cart-context'
 
 interface TicketType {
   id: string
@@ -36,6 +37,7 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, loading: authLoading } = useAuth()
+  const { refreshCart } = useCart()
   const [spotId, setSpotId] = useState<string | null>(null)
   const [spot, setSpot] = useState<Spot | null>(null)
   const [tickets, setTickets] = useState<TicketType[]>([])
@@ -146,6 +148,7 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
 
       const result = await response.json()
       if (result.success) {
+        await refreshCart() // 刷新购物车数量
         toast.success('已添加到购物车')
         router.push('/cart')
       } else {

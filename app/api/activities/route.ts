@@ -11,9 +11,18 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const location = searchParams.get('location') || ''
     const activityType = searchParams.get('activity_type') || ''
+    const isActive = searchParams.get('is_active')
 
-    let whereClause = "WHERE a.status = 'active'"
+    let whereClause = "WHERE 1=1"
     const params: any[] = []
+
+    // 如果指定 is_active=true，只显示活跃的活动
+    if (isActive === 'true') {
+      whereClause += " AND a.status = 'active'"
+    } else if (isActive === 'false') {
+      whereClause += " AND a.status = 'inactive'"
+    }
+    // 如果没有指定 is_active，显示所有状态的活动
 
     if (search) {
       whereClause += ' AND (a.title LIKE ? OR a.description LIKE ?)'

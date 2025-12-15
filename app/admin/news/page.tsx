@@ -7,13 +7,15 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Search, Plus, Edit, Trash2, Eye, FileText, CheckCircle } from "lucide-react"
+import { Search, Plus, Edit, Trash2, Eye, FileText, CheckCircle, Power } from "lucide-react"
 import { toast } from "sonner"
 import { Checkbox } from "@/components/ui/checkbox"
 import Image from 'next/image'
+import ImageUpload from '@/components/admin/ImageUpload'
+import Pagination from '@/components/admin/Pagination'
 
 interface News {
   id: string
@@ -44,7 +46,10 @@ export default function AdminNewsPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [editingNews, setEditingNews] = useState<News | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(10)
   const [selectedNewsIds, setSelectedNewsIds] = useState<string[]>([])
+  const [selectAll, setSelectAll] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -71,6 +76,7 @@ export default function AdminNewsPage() {
 
       const data = await res.json()
       setNews(data.data || [])
+      setCurrentPage(1) // 重置到第一页
     } catch (error) {
       console.error('Error fetching news:', error)
       toast.error('获取新闻列表失败')
@@ -96,40 +102,8 @@ export default function AdminNewsPage() {
     fetchCategories()
   }, [categoryFilter, statusFilter])
 
-  const handleAdd = async () => {
-    try {
-      if (!formData.title || !formData.content) {
-        toast.error('请填写标题和内容')
-        return
-      }
-
-      const token = localStorage.getItem('token')
-      const res = await fetch('/api/news', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          ...formData,
-          category_id: formData.category_id && formData.category_id !== 'none' ? parseInt(formData.category_id) : null
-        })
-      })
-
-      if (!res.ok) throw new Error('Failed to create news')
-
-      toast.success('新闻创建成功')
-      setIsAddDialogOpen(false)
-      resetForm()
-      fetchNews()
-    } catch (error) {
-      console.error('Error creating news:', error)
-      toast.error('创建新闻失败')
-    }
-  }
-
-  const handleEdit = async () => {
-    if (!editingNews) return
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
 
     try {
       if (!formData.title || !formData.content) {
@@ -138,10 +112,11 @@ export default function AdminNewsPage() {
       }
 
       const token = localStorage.getItem('token')
-      console.log('[Frontend] Updating news with ID:', editingNews.id)
+      const url = editingNews ? `/api/news/${editingNews.id}` : '/api/news'
+      const method = editingNews ? 'PUT' : 'POST'
 
-      const res = await fetch(`/api/news/${editingNews.id}`, {
-        method: 'PUT',
+      const res = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -153,19 +128,38 @@ export default function AdminNewsPage() {
       })
 
       if (!res.ok) {
-        const data = await res.json()
-        console.error('[Frontend] Update failed:', data)
-        throw new Error(data.details || data.error || 'Failed to update news')
+        const error = await res.json()
+        throw new Error(error.error || error.details || '操作失败')
       }
 
-      toast.success('新闻更新成功')
+      toast.success(editingNews ? '新闻更新成功' : '新闻创建成功')
+      setIsAddDialogOpen(false)
       setEditingNews(null)
-      resetForm()
+      setFormData({
+        title: '',
+        content: '',
+        summary: '',
+        cover_image: '',
+        category_id: 'none',
+        is_published: false
+      })
       await fetchNews()
-    } catch (error) {
-      console.error('Error updating news:', error)
-      toast.error(error instanceof Error ? error.message : '更新新闻失败')
+    } catch (error: any) {
+      toast.error(error.message || '操作失败')
     }
+  }
+
+  const handleEdit = (newsItem: News) => {
+    setEditingNews(newsItem)
+    setFormData({
+      title: newsItem.title,
+      content: newsItem.content,
+      summary: newsItem.summary || '',
+      cover_image: newsItem.cover_image || '',
+      category_id: newsItem.category_id ? newsItem.category_id.toString() : 'none',
+      is_published: newsItem.is_published === 1
+    })
+    setIsAddDialogOpen(true)
   }
 
   const handleDelete = async (id: string) => {
@@ -180,17 +174,22 @@ export default function AdminNewsPage() {
         }
       })
 
-      if (!res.ok) throw new Error('Failed to delete news')
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || '删除失败')
+      }
 
       toast.success('新闻删除成功')
       fetchNews()
-    } catch (error) {
-      console.error('Error deleting news:', error)
-      toast.error('删除新闻失败')
+    } catch (error: any) {
+      toast.error(error.message || '删除失败')
     }
   }
 
   const handleTogglePublish = async (id: string, currentPublished: number) => {
+    const newPublished = currentPublished ? 0 : 1
+    const statusText = newPublished ? '发布' : '取消发布'
+
     try {
       const newsItem = news.find(n => n.id === id)
       if (!newsItem) {
@@ -198,8 +197,6 @@ export default function AdminNewsPage() {
         await fetchNews()
         return
       }
-
-      console.log('[Frontend] Toggling publish for news ID:', id)
 
       const token = localStorage.getItem('token')
       const res = await fetch(`/api/news/${id}`, {
@@ -214,24 +211,89 @@ export default function AdminNewsPage() {
           summary: newsItem.summary,
           cover_image: newsItem.cover_image,
           category_id: newsItem.category_id,
-          is_published: currentPublished ? 0 : 1
+          is_published: newPublished
         })
       })
 
       if (!res.ok) {
-        const data = await res.json()
-        console.error('[Frontend] Toggle publish failed:', data)
-        throw new Error(data.details || data.error || 'Failed to toggle publish status')
+        const error = await res.json()
+        throw new Error(error.details || error.error || '状态更新失败')
       }
 
-      toast.success(`新闻已${currentPublished ? '取消发布' : '发布'}`)
+      toast.success(`新闻已${statusText}`)
       await fetchNews()
-    } catch (error) {
-      console.error('Error toggling publish status:', error)
-      toast.error(error instanceof Error ? error.message : '状态切换失败')
+    } catch (error: any) {
+      toast.error(error.message || '状态更新失败')
     }
   }
 
+  // 全选/取消全选
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedNewsIds([])
+      setSelectAll(false)
+    } else {
+      setSelectedNewsIds(paginatedNews.map(n => n.id))
+      setSelectAll(true)
+    }
+  }
+
+  // 单个选择
+  const handleSelectNews = (newsId: string) => {
+    setSelectedNewsIds(prev => {
+      if (prev.includes(newsId)) {
+        const newSelected = prev.filter(id => id !== newsId)
+        if (newSelected.length === 0) setSelectAll(false)
+        return newSelected
+      } else {
+        const newSelected = [...prev, newsId]
+        if (newSelected.length === paginatedNews.length) setSelectAll(true)
+        return newSelected
+      }
+    })
+  }
+
+  // 批量删除
+  const handleBatchDelete = async () => {
+    if (selectedNewsIds.length === 0) {
+      toast.error('请至少选择一篇新闻')
+      return
+    }
+
+    if (!confirm(`确定要删除选中的 ${selectedNewsIds.length} 篇新闻吗？此操作不可恢复。`)) {
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      const deletePromises = selectedNewsIds.map(newsId =>
+        fetch(`/api/news/${newsId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+      )
+
+      const results = await Promise.all(deletePromises)
+      const failedCount = results.filter(r => !r.ok).length
+
+      if (failedCount === 0) {
+        toast.success(`成功删除 ${selectedNewsIds.length} 篇新闻`)
+      } else {
+        toast.warning(`删除完成，但有 ${failedCount} 篇新闻删除失败`)
+      }
+
+      setSelectedNewsIds([])
+      setSelectAll(false)
+      fetchNews()
+    } catch (error) {
+      console.error('Error deleting news:', error)
+      toast.error('批量删除失败')
+    }
+  }
+
+  // 批量修改发布状态
   const handleBatchPublish = async (publish: boolean) => {
     if (selectedNewsIds.length === 0) {
       toast.error('请先选择新闻')
@@ -278,6 +340,7 @@ export default function AdminNewsPage() {
       }
 
       setSelectedNewsIds([])
+      setSelectAll(false)
       await fetchNews()
     } catch (error) {
       console.error('Error batch updating:', error)
@@ -285,33 +348,23 @@ export default function AdminNewsPage() {
     }
   }
 
-  const openEditDialog = (newsItem: News) => {
-    setEditingNews(newsItem)
-    setFormData({
-      title: newsItem.title,
-      content: newsItem.content,
-      summary: newsItem.summary || '',
-      cover_image: newsItem.cover_image || '',
-      category_id: newsItem.category_id ? newsItem.category_id.toString() : 'none',
-      is_published: newsItem.is_published === 1
-    })
-  }
+  const filteredNews = news.filter(item => {
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase()
+      return (
+        item.title.toLowerCase().includes(searchLower) ||
+        (item.content && item.content.toLowerCase().includes(searchLower)) ||
+        (item.summary && item.summary.toLowerCase().includes(searchLower))
+      )
+    }
+    return true
+  })
 
-  const resetForm = () => {
-    setFormData({
-      title: '',
-      content: '',
-      summary: '',
-      cover_image: '',
-      category_id: 'none',
-      is_published: false
-    })
-  }
-
-  const filteredNews = news.filter(item =>
-    item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (item.content && item.content.toLowerCase().includes(searchTerm.toLowerCase()))
-  )
+  // 分页逻辑
+  const totalPages = Math.ceil(filteredNews.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedNews = filteredNews.slice(startIndex, endIndex)
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '-'
@@ -324,29 +377,160 @@ export default function AdminNewsPage() {
     })
   }
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">新闻资讯管理</h1>
+        <div className="text-center py-12">加载中...</div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">新闻资讯管理</h1>
-        <p className="text-muted-foreground">管理平台上的所有新闻资讯</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">新闻资讯管理</h1>
+          <p className="text-muted-foreground">管理平台上的所有新闻资讯</p>
+        </div>
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={() => {
+              setEditingNews(null)
+              setFormData({
+                title: '',
+                content: '',
+                summary: '',
+                cover_image: '',
+                category_id: 'none',
+                is_published: false
+              })
+            }}>
+              <Plus className="h-4 w-4 mr-2" />
+              添加新闻
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[525px]">
+            <DialogHeader>
+              <DialogTitle>{editingNews ? '编辑新闻' : '添加新新闻'}</DialogTitle>
+              <DialogDescription>
+                {editingNews ? '修改新闻内容' : '创建一条新的新闻资讯'}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit}>
+              <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="title" className="text-right">
+                    ���闻标题
+                  </Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className="col-span-3"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-start gap-4">
+                  <Label htmlFor="summary" className="text-right pt-2">
+                    摘要
+                  </Label>
+                  <Textarea
+                    id="summary"
+                    value={formData.summary}
+                    onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
+                    className="col-span-3"
+                    placeholder="输入新闻摘要"
+                    rows={2}
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-start gap-4">
+                  <Label htmlFor="content" className="text-right pt-2">
+                    新闻内容
+                  </Label>
+                  <Textarea
+                    id="content"
+                    value={formData.content}
+                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                    className="col-span-3 font-mono text-sm"
+                    placeholder="输入新闻内容"
+                    rows={10}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="category_id" className="text-right">
+                    分类
+                  </Label>
+                  <div className="col-span-3">
+                    <Select value={formData.category_id} onValueChange={(value) => setFormData({ ...formData, category_id: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="选择分类" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">未分类</SelectItem>
+                        {categories.map(cat => (
+                          <SelectItem key={cat.id} value={cat.id.toString()}>{cat.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 items-start gap-4">
+                  <Label htmlFor="cover_image" className="text-right pt-2">
+                    封面图片
+                  </Label>
+                  <div className="col-span-3">
+                    <ImageUpload
+                      value={formData.cover_image}
+                      onChange={(url) => setFormData({ ...formData, cover_image: url })}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="is_published" className="text-right">
+                    立即发布
+                  </Label>
+                  <div className="col-span-3">
+                    <Checkbox
+                      id="is_published"
+                      checked={formData.is_published}
+                      onCheckedChange={(checked) => setFormData({ ...formData, is_published: checked as boolean })}
+                    />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit">
+                  {editingNews ? '更新' : '创建'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      {/* 过滤和操作栏 */}
+      {/* 筛选和搜索 */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="搜索新闻标题或内容..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+        <CardHeader>
+          <CardTitle>筛选条件</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="搜索新闻标题或内容"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger className="w-[150px]">
-                <SelectValue />
+                <SelectValue placeholder="分类筛选" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部分类</SelectItem>
@@ -357,7 +541,7 @@ export default function AdminNewsPage() {
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[150px]">
-                <SelectValue />
+                <SelectValue placeholder="状态筛选" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部状态</SelectItem>
@@ -365,224 +549,146 @@ export default function AdminNewsPage() {
                 <SelectItem value="draft">草稿</SelectItem>
               </SelectContent>
             </Select>
-            <Button onClick={() => setIsAddDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              添加新闻
-            </Button>
           </div>
-
-          {/* 批量操作 */}
-          {selectedNewsIds.length > 0 && (
-            <div className="mt-4 flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => handleBatchPublish(true)}>
-                批量发布 ({selectedNewsIds.length})
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => handleBatchPublish(false)}>
-                批量取消发布 ({selectedNewsIds.length})
-              </Button>
-            </div>
-          )}
         </CardContent>
       </Card>
 
       {/* 新闻列表 */}
       <Card>
         <CardHeader>
-          <CardTitle>新闻列表 ({filteredNews.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-8">加载中...</div>
-          ) : filteredNews.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">暂无新闻</div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[50px]">
-                    <Checkbox
-                      checked={selectedNewsIds.length === filteredNews.length}
-                      onCheckedChange={(checked) => {
-                        setSelectedNewsIds(checked ? filteredNews.map(n => n.id) : [])
-                      }}
-                    />
-                  </TableHead>
-                  <TableHead>标题</TableHead>
-                  <TableHead>分类</TableHead>
-                  <TableHead>作者</TableHead>
-                  <TableHead>浏览量</TableHead>
-                  <TableHead>状态</TableHead>
-                  <TableHead>发布时间</TableHead>
-                  <TableHead className="text-right">操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredNews.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedNewsIds.includes(item.id)}
-                        onCheckedChange={(checked) => {
-                          setSelectedNewsIds(
-                            checked
-                              ? [...selectedNewsIds, item.id]
-                              : selectedNewsIds.filter(id => id !== item.id)
-                          )
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium max-w-md truncate">{item.title}</div>
-                      {item.summary && (
-                        <div className="text-sm text-muted-foreground line-clamp-1">
-                          {item.summary}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{item.category_name || '未分类'}</Badge>
-                    </TableCell>
-                    <TableCell>{item.author_name || '-'}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Eye className="h-3 w-3" />
-                        {item.view_count}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={item.is_published ? 'default' : 'secondary'}>
-                        {item.is_published ? '已发布' : '草稿'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm">{formatDate(item.published_at)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleTogglePublish(item.id, item.is_published)}
-                          title={item.is_published ? '取消发布' : '发布'}
-                        >
-                          <CheckCircle className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditDialog(item)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(item.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* 添加/编辑对话框 */}
-      <Dialog open={isAddDialogOpen || editingNews !== null} onOpenChange={(open) => {
-        if (!open) {
-          setIsAddDialogOpen(false)
-          setEditingNews(null)
-          resetForm()
-        }
-      }}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingNews ? '编辑新闻' : '添加新闻'}</DialogTitle>
-            <DialogDescription>
-              {editingNews ? '修改新闻内容' : '创建新的新闻资讯'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="title">新闻标题 *</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="输入新闻标题"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="summary">摘要</Label>
-              <Textarea
-                id="summary"
-                value={formData.summary}
-                onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-                placeholder="输入新闻摘要"
-                rows={2}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="content">新闻内容 *</Label>
-              <Textarea
-                id="content"
-                value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                placeholder="输入新闻内容"
-                rows={10}
-                className="font-mono text-sm"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="cover_image">封面图片 URL</Label>
-                <Input
-                  id="cover_image"
-                  value={formData.cover_image}
-                  onChange={(e) => setFormData({ ...formData, cover_image: e.target.value })}
-                  placeholder="输入图片 URL"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="category_id">分类</Label>
-                <Select value={formData.category_id} onValueChange={(value) => setFormData({ ...formData, category_id: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="选择分类" />
+          <div className="flex items-center justify-between">
+            <CardTitle>新闻列表 ({filteredNews.length})</CardTitle>
+            {selectedNewsIds.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  已选择 {selectedNewsIds.length} 项
+                </span>
+                <Select onValueChange={(value) => {
+                  if (value === 'publish') handleBatchPublish(true)
+                  else if (value === 'unpublish') handleBatchPublish(false)
+                }}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="批量修改状态" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">未分类</SelectItem>
-                    {categories.map(cat => (
-                      <SelectItem key={cat.id} value={cat.id.toString()}>{cat.name}</SelectItem>
-                    ))}
+                    <SelectItem value="publish">设为发布</SelectItem>
+                    <SelectItem value="unpublish">设为草稿</SelectItem>
                   </SelectContent>
                 </Select>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleBatchDelete}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  批量删除
+                </Button>
               </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="is_published"
-                checked={formData.is_published}
-                onCheckedChange={(checked) => setFormData({ ...formData, is_published: checked as boolean })}
-              />
-              <Label htmlFor="is_published">立即发布</Label>
-            </div>
+            )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setIsAddDialogOpen(false)
-              setEditingNews(null)
-              resetForm()
-            }}>
-              取消
-            </Button>
-            <Button onClick={editingNews ? handleEdit : handleAdd}>
-              {editingNews ? '保存' : '创建'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[50px]">
+                  <Checkbox
+                    checked={selectAll}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
+                <TableHead>标题</TableHead>
+                <TableHead>分类</TableHead>
+                <TableHead>作者</TableHead>
+                <TableHead>浏览量</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead>发布时间</TableHead>
+                <TableHead>操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedNews.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedNewsIds.includes(item.id)}
+                      onCheckedChange={() => handleSelectNews(item.id)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      {item.cover_image && (
+                        <div className="relative w-16 h-16">
+                          <Image
+                            src={item.cover_image}
+                            alt={item.title}
+                            fill
+                            className="object-cover rounded"
+                          />
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-medium max-w-md truncate">{item.title}</p>
+                        {item.summary && (
+                          <p className="text-sm text-muted-foreground line-clamp-1">
+                            {item.summary}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{item.category_name || '未分类'}</Badge>
+                  </TableCell>
+                  <TableCell>{item.author_name || '-'}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1 text-sm">
+                      <Eye className="h-3 w-3" />
+                      {item.view_count}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={item.is_published ? 'default' : 'secondary'}>
+                      {item.is_published ? '已发布' : '草稿'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm">{formatDate(item.published_at)}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleTogglePublish(item.id, item.is_published)}
+                        title={item.is_published ? '取消��布' : '发布'}
+                      >
+                        <Power className={`h-4 w-4 ${item.is_published ? 'text-green-600' : 'text-gray-400'}`} />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(item.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          {filteredNews.length === 0 && (
+            <div className="text-center py-12 text-muted-foreground">
+              暂无新闻数据
+            </div>
+          )}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            itemsPerPage={itemsPerPage}
+            totalItems={filteredNews.length}
+          />
+        </CardContent>
+      </Card>
     </div>
   )
 }

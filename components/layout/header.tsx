@@ -28,6 +28,7 @@ import {
   Settings,
 } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useCart } from "@/contexts/cart-context"
 
 interface UserProfile {
   id: number
@@ -57,7 +58,7 @@ export function Header() {
   const pathname = usePathname()
   const router = useRouter()
   const [user, setUser] = useState<UserProfile | null>(null)
-  const [cartCount, setCartCount] = useState(0)
+  const { cartCount, refreshCart } = useCart()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
@@ -75,29 +76,20 @@ export function Header() {
           // 获取购物车数量（仅对非���游用户）
           const userRole = userData.data?.user?.role || userData.user?.role
           if (userRole !== 'guide') {
-            const cartRes = await fetch('/api/cart', {
-              credentials: 'include' // 自动发送 cookie
-            })
-
-            if (cartRes.ok) {
-              const cartData = await cartRes.json()
-              setCartCount(cartData.items?.length || 0)
-            }
+            refreshCart()
           }
         } else {
           // 未认证
           setUser(null)
-          setCartCount(0)
         }
       } catch (error) {
         console.error('获取用户数据失败:', error)
         setUser(null)
-        setCartCount(0)
       }
     }
 
     fetchUserData()
-  }, [])
+  }, [refreshCart])
 
   const handleLogout = async () => {
     try {
@@ -112,7 +104,6 @@ export function Header() {
 
     // 清除客户端状态
     setUser(null)
-    setCartCount(0)
     router.push("/")
     router.refresh()
   }
