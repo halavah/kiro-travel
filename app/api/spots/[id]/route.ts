@@ -5,10 +5,10 @@ import { validateAuth } from '@/lib/auth'
 // GET /api/spots/[id] - 获取景点详情
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id
+    const { id } = await params
 
     // 获取景点基本信息
     const spot = dbGet(`
@@ -71,7 +71,7 @@ export async function GET(
 // PUT /api/spots/[id] - 更新景点
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user } = await validateAuth(request)
@@ -83,7 +83,7 @@ export async function PUT(
       )
     }
 
-    const id = params.id
+    const { id } = await params
     const body = await request.json()
 
     // 检查景点是否存在
@@ -175,7 +175,7 @@ export async function PUT(
 // DELETE /api/spots/[id] - 删除景点
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user } = await validateAuth(request)
@@ -187,7 +187,7 @@ export async function DELETE(
       )
     }
 
-    const id = params.id
+    const { id } = await params
 
     // 检查景点是否存在
     const spot = dbGet('SELECT * FROM spots WHERE id = ?', [id])

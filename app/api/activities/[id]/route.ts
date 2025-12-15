@@ -5,10 +5,10 @@ import { validateAuth, checkRole } from '@/lib/auth'
 // GET /api/activities/[id] - 获取活动详情
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id
+    const { id } = await params
 
     const activity = dbGet(`SELECT * FROM activities WHERE id = ?`, [id])
 
@@ -38,7 +38,7 @@ export async function GET(
 // PUT /api/activities/[id] - 更新活动
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error } = await validateAuth(request)
@@ -57,7 +57,7 @@ export async function PUT(
       )
     }
 
-    const id = params.id
+    const { id } = await params
     const body = await request.json()
     const { title, description, location, start_time, end_time, max_participants, price, images, status } = body
 
@@ -144,7 +144,7 @@ export async function PUT(
 // DELETE /api/activities/[id] - 删除活动
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { user, error } = await validateAuth(request)
@@ -163,7 +163,7 @@ export async function DELETE(
       )
     }
 
-    const id = params.id
+    const { id } = await params
 
     dbRun(`DELETE FROM activity_participants WHERE activity_id = ?`, [id])
     dbRun(`DELETE FROM activities WHERE id = ?`, [id])
