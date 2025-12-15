@@ -1,14 +1,20 @@
 # 🌍 Kiro Travel - 旅游服务系统
 
-基于 Next.js 16 + SQLite 的现代化旅游服务平台，提供景点浏览、门票预订、酒店预订、旅游活动等全方位旅游服务。
+**现代化全栈旅游服务平台 | 零成本免费部署**
 
-![Next.js](https://img.shields.io/badge/Next.js-16.0-black?style=flat-square&logo=next.js)
-![React](https://img.shields.io/badge/React-19.2-blue?style=flat-square&logo=react)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat-square&logo=typescript)
-![SQLite](https://img.shields.io/badge/SQLite-better--sqlite3-003b57?style=flat-square&logo=sqlite)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.0-38bdf8?style=flat-square&logo=tailwind-css)
+[![Next.js](https://img.shields.io/badge/Next.js-16.0-black?style=flat&logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.2-blue?style=flat&logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat&logo=typescript)](https://www.typescriptlang.org/)
+[![SQLite](https://img.shields.io/badge/SQLite-better--sqlite3-003b57?style=flat&logo=sqlite)](https://github.com/WiseLibs/better-sqlite3)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.0-38bdf8?style=flat&logo=tailwind-css)](https://tailwindcss.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Render](https://img.shields.io/badge/Render-Deployed-46E3B7?style=flat&logo=render)](https://render.com/)
 
-> ⚡ 已完成从 Supabase 到 SQLite 的完整迁移，使用 JWT 认证和本地数据库
+[**🌐 在线演示**](#) · [**📖 部署文档**](./docs/) · [**🐛 问题反馈**](https://github.com/your-username/kiro-travel/issues) · [**✨ 功能建议**](https://github.com/your-username/kiro-travel/issues/new)
+
+*一个功能完整的旅游服务平台，支持景点浏览、门票预订、酒店预订、旅游活动等全方位服务。基于 Next.js 16 + SQLite，零配置即可运行，支持免费部署到 Render.com*
+
+---
 
 ## ✨ 功能特性
 
@@ -48,98 +54,143 @@
 - 个人中心
 - 订单和收藏管理
 
-## 🚀 快速启动
+## 🚀 快速开始
 
-### 🎯 一键启动（推荐）
+### 方式一：一键部署到 Render.com (推荐) ⭐
 
-#### macOS / Linux
+**零代码修改 | 完全免费 | SQLite 原生支持**
+
+点击下方按钮，3 分钟完成部署：
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/your-username/kiro-travel)
+
+**部署后自动配置**：
+1. ✅ 自动构建并部署 Next.js 应用
+2. ✅ 自动初始化 SQLite 数据库
+3. ✅ 自动配置持久化存储（数据永不丢失）
+4. ✅ 自动生成安全的 JWT_SECRET
+5. ✅ 提供免费的 HTTPS 域名
+
+**免费额度**：
+- 750 小时/月（足够单实例全天候运行）
+- 100 GB 流量/月
+- 1 GB 持久化存储
+- 自动 HTTPS 证书
+
+**配置建议**：
+- 🌏 部署地区：Singapore（新加坡）- 最适合亚太地区访问
+- 🔒 安全防护：配合 [Cloudflare CDN](./docs/11.部署平台对比分析.md#cloudflare-cdn-优化) 获得 DDoS 保护
+- 📊 监控保活：使用 [UptimeRobot](./docs/13.UptimeRobot设置指南.md) 避免 15 分钟自动休眠
+
+> 💡 **为什么选择 Render？**
+> - ✅ 完全支持 SQLite（无需修改数据库代码）
+> - ✅ 永久免费（不需要信用卡）
+> - ✅ 零账单风险（不绑卡就不会扣费）
+> - ✅ 部署最简单（GitHub 连接后自动部署）
+>
+> 📖 详细对比：[7大平台部署方案对比分析](./docs/11.部署平台对比分析.md)
+
+---
+
+### 方式二：使用 GitHub Template
+
+1. 点击仓库页面右上角的 **"Use this template"** 按钮
+2. 创建你自己的仓库
+3. Clone 到本地开始开发
+
+```bash
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+cd YOUR_REPO_NAME
+npm install
+npm run dev
+```
+
+---
+
+### 方式三：本地开发（推荐首次体验）
+
+#### 🎯 一键启动脚本（最简单）
+
+**macOS / Linux**:
 ```bash
 # 克隆项目
-git clone <your-repo-url>
+git clone https://github.com/your-username/kiro-travel.git
 cd kiro-travel
 
-# 使用启动脚本（自动处理端口冲突、清理缓存、初始化数据库）
+# 使用交互式启动脚本
 ./start.sh
 
-# 或者手动运行完整重启
-npm install
-npm run db:init
-npm run dev
+# 选择选项 2: 完整重启（自动处理端口冲突、清理缓存、初始化数据库）
 ```
 
-#### Windows
+**Windows**:
 ```batch
 # 克隆项目
-git clone <your-repo-url>
+git clone https://github.com/your-username/kiro-travel.git
 cd kiro-travel
 
-# 使用启动脚本（自动处理端口冲突、清理缓存、初始化数据库）
+# 使用交互式启动脚本
 start.bat
 
-# 或者手动运行完整重启
-npm install
-npm run db:init
-npm run dev
+# 选择选项 2: 完整重启
 ```
 
-### 📋 启动脚本功能
+#### 📋 启动脚本功能菜单
 
-`start.sh` (macOS/Linux) 和 `start.bat` (Windows) 提供以下功能：
+`start.sh` / `start.bat` 提供以下功能：
 
-**开发模式:**
-1. **开发服务器** - 启动开发服务器
-2. **完整重启** ⭐ (默认) - 清理端口、进程、缓存后重启
+**开发模式**:
+1. 开发服务器 - 启动开发服务器
+2. **完整重启** ⭐ (推荐) - 清理端口、进程、缓存后重启
 
-**生产模式:**
-3. **构建项目** - 构建生产版本
-4. **启动生产服务器** - 启动生产服务器
-5. **构建并启动** - 构建并启动生产服务器
+**生产模式**:
+3. 构建项目 - 构建生产版本
+4. 启动生产服务器 - 启动生产服务器
+5. 构建并启动 - 构建并启动生产服务器
 
-**清理操作:**
-6. **清理 .next 目录** - 删除构建缓存
-7. **清理 node_modules** - 删除并重装依赖
-8. **清理端口 3000** - 终止占用 3000 端口的进程
-9. **清理所有进程** - 终止所有 Next.js 进程
+**清理操作**:
+6. 清理 .next 目录 - 删除构建缓存
+7. 清理 node_modules - 删除并重装依赖
+8. 清理端口 3000 - 终止占用 3000 端口的进程
+9. 清理所有进程 - 终止所有 Next.js 进程
 
-**数据库操作:**
-10. **初始化数据库** - 创建表 + 测试数据 + FTS 索引
-11. **重置数据库** - 删除并重新创建数据库
-12. **查看数据统计** - 显示数据库中的数据统计
-13. **设置 FTS 索引** - 单独设置全文搜索索引
+**数据库操作**:
+10. 初始化数据库 - 创建表 + 测试数据 + FTS 索引
+11. ��置数据库 - 删除并重新创建数据库
+12. 查看数据统计 - 显示数据库中的数据统计
+13. 设置 FTS 索引 - 单独设置全文搜索索引
 
-**其他:**
-14. **代码检查** - 运行 ESLint
-15. **类型检查** - 运行 TypeScript 类型检查
-0. **退出**
+**其他**:
+14. 代码检查 - 运行 ESLint
+15. 类型检查 - 运行 TypeScript 类型检查
+0. 退出
 
-访问 [http://localhost:3000](http://localhost:3000)
+访问 [http://localhost:3000](http://localhost:3000) 🎉
 
-### 手动启动
+---
+
+### 方式四：手动启动
 
 如果需要手动执行步骤：
 
-1. **安装依赖**
-   ```bash
-   npm install
-   ```
+```bash
+# 1. 安装依赖
+npm install
 
-2. **初始化数据库**
-   ```bash
-   npm run db:init
-   ```
-   这会自动：
-   - 创建 `data/travel.db` SQLite 数据库文件
-   - 创建所有数据表
-   - 插入示例数据
+# 2. 初始化数据库（自动创建表结构 + 插入测试数据 + FTS索引）
+npm run db:init
 
-3. **启动开发服务器**
-   ```bash
-   npm run dev
-   ```
+# 3. 启动开发服务器
+npm run dev
 
-### 默认测试账户
+# 4. 访问 http://localhost:3000
+```
 
-系统初始化后会创建以下测试账户（所有账号密码均为：`password123`）：
+---
+
+### 🔑 默认测试账户
+
+系统初始化后会创建以下测试账户（**所有账号密码均为：`password123`**）：
 
 #### 👑 管理员账号 (Admin)
 | 角色 | 邮箱 | 姓名 | 权限说明 |
@@ -152,16 +203,12 @@ npm run dev
 |------|------|------|----------|
 | 导游 | guide1@test.com | 王五 | 导游专属功能，可创建活动和景点介绍 |
 | 导游 | guide2@test.com | 赵六 | 导游专属功能，可创建活动和景点介绍 |
-| 导游 | guide3@test.com | 孙七 | 导游专属功能，可创建活动和景点介绍 |
 
 #### 👤 普通用户账号 (User)
 | 邮箱 | 姓名 | 用途说明 |
 |------|------|----------|
 | zhang@test.com | 张三 | 测试预订、评论、收藏等功能 |
 | li@test.com | 李四 | 测试购物车、订单等功能 |
-| user1@test.com | 测试用户1 | 通用测试账号 |
-| user2@test.com | 测试用户2 | 通用测试账号 |
-| user3@test.com | 测试用户3 | 通用测试账号 |
 | demo@test.com | 演示账号 | 用于演示展示 |
 | test@test.com | 测试账号 | 用于自动化测试 |
 
@@ -169,6 +216,8 @@ npm run dev
 > - 生产环境请务必修改所有默认密码
 > - 建议首次登录后立即修改密码
 > - 请勿在生产环境使用这些测试账号
+
+---
 
 ## 📚 文档
 
@@ -228,7 +277,38 @@ kiro-travel/
 
 ## 🛠️ 技术栈
 
-### 前端框架
+<table>
+<tr>
+<td align="center" width="96">
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nextjs/nextjs-original.svg" width="48" height="48" alt="Next.js" />
+  <br>Next.js 16
+</td>
+<td align="center" width="96">
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" width="48" height="48" alt="React" />
+  <br>React 19
+</td>
+<td align="center" width="96">
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" width="48" height="48" alt="TypeScript" />
+  <br>TypeScript
+</td>
+<td align="center" width="96">
+  <img src="https://www.vectorlogo.zone/logos/tailwindcss/tailwindcss-icon.svg" width="48" height="48" alt="Tailwind" />
+  <br>Tailwind 4
+</td>
+<td align="center" width="96">
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/sqlite/sqlite-original.svg" width="48" height="48" alt="SQLite" />
+  <br>SQLite
+</td>
+<td align="center" width="96">
+  <img src="https://cdn.worldvectorlogo.com/logos/jwt-3.svg" width="48" height="48" alt="JWT" />
+  <br>JWT Auth
+</td>
+</tr>
+</table>
+
+### 核心技术
+
+**前端框架**
 - **Next.js 16** - React 框架（Turbopack + App Router）
 - **React 19.2** - UI 库
 - **TypeScript 5.0** - 类型安全
@@ -236,19 +316,19 @@ kiro-travel/
 - **Radix UI** - 无障碍 UI 组件库
 - **shadcn/ui** - 高质量组件集合
 
-### 数据与状态
+**数据与状态**
 - **better-sqlite3** - 高性能同步 SQLite 库
 - **React Hooks** - 状态管理
 - **localStorage** - 客户端持久化存储
 
-### 表单与验证
+**表单与验证**
 - **React Hook Form** - 表单管理
 - **Zod** - 运行时类型验证
 
-### 数据可视化
+**数据可视化**
 - **Recharts** - 图表库
 
-### 后端与认证
+**后端与认证**
 - **Next.js API Routes** - RESTful API
 - **JWT (jsonwebtoken)** - 无状态身份认证
 - **bcryptjs** - 密码哈希加密
@@ -256,11 +336,14 @@ kiro-travel/
   - 零配置启动
   - 支持事务和并发
   - 文件级别备份
+  - FTS5 全文搜索
 
-### 开发工具
+**开发工具**
 - **ESLint** - 代码检查
 - **Prettier** - 代码格式化
 - **TypeScript** - 静态类型检查
+
+---
 
 ## 📊 数据库架构
 
@@ -557,6 +640,8 @@ docker run -p 3000:3000 -v ./data:/app/data kiro-travel
 
 如果这个项目对你有帮助，请给它一个 Star！⭐
 
+[![Star History Chart](https://api.star-history.com/svg?repos=your-username/kiro-travel&type=Date)](https://star-history.com/#your-username/kiro-travel&Date)
+
 ---
 
 ## 🎉 开始使用
@@ -564,8 +649,12 @@ docker run -p 3000:3000 -v ./data:/app/data kiro-travel
 **首次使用前，请执行以下步骤：**
 
 ```bash
+# 方式一：一键部署到 Render.com（推荐）
+# 点击上方的 "Deploy to Render" 按钮即可
+
+# 方式二：本地开发
 # 1. 克隆项目
-git clone <your-repo-url>
+git clone https://github.com/your-username/kiro-travel.git
 cd kiro-travel
 
 # 2. 运行启动脚本（推荐）
