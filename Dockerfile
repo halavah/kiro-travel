@@ -1,10 +1,14 @@
-# 使用 Node.js 20 官方镜像（better-sqlite3 和 Next.js 16 需要 Node 20+）
-FROM node:20-alpine AS base
+# 使用 Node.js 20 Debian Slim 镜像（better-sqlite3 和 lightningcss 需要更好的原生模块支持）
+FROM node:20-slim AS base
 
 # 安装依赖阶段
 FROM base AS deps
-# 安装 better-sqlite3 需要的构建工具和 Python setuptools
-RUN apk add --no-cache libc6-compat python3 python3-dev py3-setuptools make g++
+# 安装 better-sqlite3 和 lightningcss 需要的构建工具
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 # 复制 package.json 和 lock 文件
@@ -28,12 +32,17 @@ RUN npm run build
 FROM base AS runner
 WORKDIR /app
 
+# 安装运行时需要的工具（wget 用于健康检查）
+RUN apt-get update && apt-get install -y \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# 创建非 root 用户
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# 创建非 root 用户（Debian 语法）
+RUN groupadd -r -g 1001 nodejs && \
+    useradd -r -u 1001 -g nodejs nextjs
 
 # 复制构建产物
 COPY --from=builder /app/public ./public
