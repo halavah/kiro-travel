@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { dbGet, dbRun } from '@/lib/db-utils'
+import { dbGet, dbRun, normalizeJsonArrayField } from '@/lib/db-utils'
 import { validateAuth, checkRole } from '@/lib/auth'
 
 // GET /api/activities/[id] - 获取活动详情
@@ -61,6 +61,26 @@ export async function PUT(
     const body = await request.json()
     const { title, description, location, start_time, end_time, max_participants, price, images, status } = body
 
+    console.log('[Activity Update] Request body:', {
+      id,
+      title,
+      images_raw: images,
+      images_type: typeof images,
+      status
+    })
+
+    // 验证必填字段
+    if (!title || !location || !start_time || !end_time) {
+      return NextResponse.json(
+        { success: false, error: '标题、地点、开始时间和结束时间为必填项' },
+        { status: 400 }
+      )
+    }
+
+    // 规范化 images 字段
+    const normalizedImages = normalizeJsonArrayField(images)
+    console.log('[Activity Update] Normalized images:', normalizedImages)
+
     const sql = `
       UPDATE activities
       SET title = ?, description = ?, location = ?, start_time = ?, end_time = ?,
@@ -68,18 +88,35 @@ export async function PUT(
       WHERE id = ?
     `
 
-    dbRun(sql, [
+    const sqlParams = [
       title,
-      description,
+      description || null,
       location,
       start_time,
       end_time,
-      max_participants,
-      price,
-      JSON.stringify(images || []),
+      max_participants || 0,
+      price || 0,
+      normalizedImages,
       status || 'active',
       id
-    ])
+    ]
+
+    console.log('[Activity Update] SQL Params:', sqlParams)
+
+    try {
+      const result = dbRun(sql, sqlParams)
+      console.log('[Activity Update] DB Result:', result)
+
+      if (result.changes === 0) {
+        return NextResponse.json(
+          { success: false, error: '活动不存在或未发生变更' },
+          { status: 404 }
+        )
+      }
+    } catch (dbError) {
+      console.error('[Activity Update] DB Error:', dbError)
+      throw dbError
+    }
 
     const updatedActivity = dbGet(`SELECT * FROM activities WHERE id = ?`, [id])
 
@@ -94,7 +131,11 @@ export async function PUT(
   } catch (error) {
     console.error('Error updating activity:', error)
     return NextResponse.json(
-      { success: false, error: '更新活动失败' },
+      {
+        success: false,
+        error: '更新活动失败',
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     )
   }

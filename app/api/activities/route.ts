@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { dbQuery, paginate, dbRun, dbGet } from '@/lib/db-utils'
+import { dbQuery, paginate, dbRun, dbGet, normalizeJsonArrayField } from '@/lib/db-utils'
 import { validateAuth, checkRole } from '@/lib/auth'
 
 // GET /api/activities - 获取活动列表
@@ -106,7 +106,9 @@ export async function POST(request: NextRequest) {
     }
 
     const id = `activity_${Date.now()}`
-    const imagesJson = JSON.stringify(images || [])
+
+    // 规范化 images 字段
+    const normalizedImages = normalizeJsonArrayField(images)
 
     const sql = `
       INSERT INTO activities (
@@ -116,7 +118,7 @@ export async function POST(request: NextRequest) {
     `
 
     dbRun(sql, [
-      id, title, description, location, imagesJson, activity_type,
+      id, title, description, location, normalizedImages, activity_type,
       start_time, end_time, price, max_participants
     ])
 
