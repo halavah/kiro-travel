@@ -25,8 +25,21 @@ export async function GET(req: NextRequest) {
     `, [decoded.userId])
     const orders = ordersResult[0]?.count || 0
 
-    // 酒店预订数量（hotel_bookings表不存在，暂时返回0）
-    const bookings = 0
+    // 酒店预订数量
+    const bookingsResult = dbQuery(`
+      SELECT COUNT(*) as count
+      FROM hotel_bookings
+      WHERE user_id = ?
+    `, [decoded.userId])
+    const bookings = bookingsResult[0]?.count || 0
+
+    // 活动报名数量
+    const activitiesResult = dbQuery(`
+      SELECT COUNT(*) as count
+      FROM activity_participants
+      WHERE user_id = ? AND status = 'registered'
+    `, [decoded.userId])
+    const activities = activitiesResult[0]?.count || 0
 
     // 收藏数量（spot_favorites表不存在，暂时返回0）
     const favorites = 0
@@ -38,6 +51,7 @@ export async function GET(req: NextRequest) {
       data: {
         orders,
         bookings,
+        activities,
         favorites,
         comments
       }

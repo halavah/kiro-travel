@@ -23,7 +23,7 @@ export async function POST(
 
     // 检查活动是否存在且状态为 active
     const activity = dbGet(`
-      SELECT id, name, max_participants, status
+      SELECT id, title, max_participants, status
       FROM activities
       WHERE id = ? AND status = 'active'
     `, [id])

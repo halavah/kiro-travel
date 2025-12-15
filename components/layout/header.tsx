@@ -188,9 +188,21 @@ export function Header() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
+                    <Link href="/admin/bookings" className="cursor-pointer">
+                      <Hotel className="mr-2 h-4 w-4" />
+                      预订管理
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link href="/admin/activities" className="cursor-pointer">
                       <Compass className="mr-2 h-4 w-4" />
                       旅游活动
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin/participants" className="cursor-pointer">
+                      <Compass className="mr-2 h-4 w-4" />
+                      报名管理
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -383,12 +395,28 @@ export function Header() {
                   酒店管理
                 </Link>
                 <Link
+                  href="/admin/bookings"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
+                >
+                  <Hotel className="h-4 w-4" />
+                  预订管理
+                </Link>
+                <Link
                   href="/admin/activities"
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
                 >
                   <Compass className="h-4 w-4" />
                   旅游活动
+                </Link>
+                <Link
+                  href="/admin/participants"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
+                >
+                  <Compass className="h-4 w-4" />
+                  报名管理
                 </Link>
                 <Link
                   href="/admin/news"

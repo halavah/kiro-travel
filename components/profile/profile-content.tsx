@@ -10,8 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { User, Mail, Phone, Calendar, Shield, Ticket, Hotel, Heart, MessageSquare, Loader2 } from "lucide-react"
+import { User, Mail, Phone, Calendar, Shield, Ticket, Hotel, Heart, MessageSquare, Loader2, Compass } from "lucide-react"
 import type { Profile as UserType } from "@/lib/types"
+import Link from "next/link"
 
 const fetcher = (url: string) => {
   const token = localStorage.getItem('token')
@@ -55,6 +56,7 @@ export function ProfileContent() {
     bookings: 0,
     favorites: 0,
     comments: 0,
+    activities: 0,
   }
 
   // 当用户数据加载完成时，初始化表单
@@ -164,6 +166,76 @@ export function ProfileContent() {
 
   return (
     <div className="space-y-6">
+      {/* 顶部统计图标 */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-muted-foreground">快捷入口</h3>
+            <div className="flex items-center gap-6">
+              <Link href="/orders" className="flex flex-col items-center gap-1 hover:opacity-80 transition-opacity group">
+                <div className="relative">
+                  <Ticket className="h-6 w-6 text-orange-600" />
+                  {stats.orders > 0 && (
+                    <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                      {stats.orders}
+                    </Badge>
+                  )}
+                </div>
+                <span className="text-xs text-muted-foreground group-hover:text-foreground">门票订单</span>
+              </Link>
+
+              <Link href="/profile/bookings" className="flex flex-col items-center gap-1 hover:opacity-80 transition-opacity group">
+                <div className="relative">
+                  <Hotel className="h-6 w-6 text-blue-600" />
+                  {stats.bookings > 0 && (
+                    <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                      {stats.bookings}
+                    </Badge>
+                  )}
+                </div>
+                <span className="text-xs text-muted-foreground group-hover:text-foreground">酒店预订</span>
+              </Link>
+
+              <Link href="/profile/activities" className="flex flex-col items-center gap-1 hover:opacity-80 transition-opacity group">
+                <div className="relative">
+                  <Compass className="h-6 w-6 text-purple-600" />
+                  {stats.activities > 0 && (
+                    <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                      {stats.activities}
+                    </Badge>
+                  )}
+                </div>
+                <span className="text-xs text-muted-foreground group-hover:text-foreground">活动报名</span>
+              </Link>
+
+              <Link href="/favorites" className="flex flex-col items-center gap-1 hover:opacity-80 transition-opacity group">
+                <div className="relative">
+                  <Heart className="h-6 w-6 text-red-600" />
+                  {stats.favorites > 0 && (
+                    <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                      {stats.favorites}
+                    </Badge>
+                  )}
+                </div>
+                <span className="text-xs text-muted-foreground group-hover:text-foreground">收藏景点</span>
+              </Link>
+
+              <div className="flex flex-col items-center gap-1">
+                <div className="relative">
+                  <MessageSquare className="h-6 w-6 text-green-600" />
+                  {stats.comments > 0 && (
+                    <Badge variant="secondary" className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                      {stats.comments}
+                    </Badge>
+                  )}
+                </div>
+                <span className="text-xs text-muted-foreground">评论数</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* 用户概览卡片 */}
       <Card>
         <CardContent className="p-6">
@@ -195,29 +267,6 @@ export function ProfileContent() {
                 <Calendar className="h-4 w-4" />
                 注册时间：{new Date(user.created_at).toLocaleDateString("zh-CN")}
               </p>
-            </div>
-            {/* 统计数据 */}
-            <div className="grid grid-cols-4 gap-4 text-center">
-              <div className="p-4 rounded-lg bg-orange-50">
-                <Ticket className="h-5 w-5 mx-auto mb-1 text-orange-600" />
-                <p className="text-2xl font-bold text-orange-600">{stats.orders}</p>
-                <p className="text-xs text-muted-foreground">门票订单</p>
-              </div>
-              <div className="p-4 rounded-lg bg-blue-50">
-                <Hotel className="h-5 w-5 mx-auto mb-1 text-blue-600" />
-                <p className="text-2xl font-bold text-blue-600">{stats.bookings}</p>
-                <p className="text-xs text-muted-foreground">酒店预订</p>
-              </div>
-              <div className="p-4 rounded-lg bg-red-50">
-                <Heart className="h-5 w-5 mx-auto mb-1 text-red-600" />
-                <p className="text-2xl font-bold text-red-600">{stats.favorites}</p>
-                <p className="text-xs text-muted-foreground">收藏景点</p>
-              </div>
-              <div className="p-4 rounded-lg bg-green-50">
-                <MessageSquare className="h-5 w-5 mx-auto mb-1 text-green-600" />
-                <p className="text-2xl font-bold text-green-600">{stats.comments}</p>
-                <p className="text-xs text-muted-foreground">评论数</p>
-              </div>
             </div>
           </div>
         </CardContent>
