@@ -58,7 +58,6 @@ export async function GET(req: NextRequest) {
         b.updated_at,
         p.email as user_email,
         p.full_name as user_name,
-        p.phone as user_phone,
         r.images as room_images
       FROM hotel_bookings b
       LEFT JOIN profiles p ON b.user_id = p.id

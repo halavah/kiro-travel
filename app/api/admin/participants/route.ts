@@ -63,8 +63,7 @@ export async function GET(req: NextRequest) {
         a.max_participants,
         a.images as activity_images,
         u.email as user_email,
-        u.full_name as user_name,
-        u.phone as user_phone
+        u.full_name as user_name
       FROM activity_participants p
       LEFT JOIN activities a ON p.activity_id = a.id
       LEFT JOIN profiles u ON p.user_id = u.id

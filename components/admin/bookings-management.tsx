@@ -15,7 +15,6 @@ interface Booking {
   user_id: number
   user_email: string
   user_name: string
-  user_phone: string
   hotel_name: string
   room_name: string
   check_in: string
@@ -172,9 +171,6 @@ export function BookingsManagement() {
                         <div>
                           <p className="text-muted-foreground">预订用户</p>
                           <p className="font-medium">{booking.user_name || booking.user_email}</p>
-                          {booking.user_phone && (
-                            <p className="text-xs text-muted-foreground">{booking.user_phone}</p>
-                          )}
                         </div>
                         <div>
                           <p className="text-muted-foreground">入住/退房日期</p>

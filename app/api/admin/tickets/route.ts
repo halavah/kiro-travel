@@ -120,12 +120,11 @@ export async function POST(req: NextRequest) {
     const { lastInsertRowid } = dbRun(`
       INSERT INTO tickets (
         id, name, description, price, stock, spot_id,
-        valid_from, valid_to, status, created_by, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        valid_from, valid_to, status, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
     `, [
       ticketId, name, description || null, price, stock, spot_id,
-      valid_from || null, valid_to || null, status || 'active',
-      decoded.userId
+      valid_from || null, valid_to || null, status || 'active'
     ])
 
     // 获取创建的门票

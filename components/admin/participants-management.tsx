@@ -18,7 +18,6 @@ interface Participant {
   user_id: number
   user_email: string
   user_name: string
-  user_phone: string
   activity_name: string
   location: string
   start_time: string
@@ -171,9 +170,6 @@ export function ParticipantsManagement() {
                           <div>
                             <p className="text-muted-foreground">报名用户</p>
                             <p className="font-medium">{participant.user_name || participant.user_email}</p>
-                            {participant.user_phone && (
-                              <p className="text-xs text-muted-foreground">{participant.user_phone}</p>
-                            )}
                           </div>
                           <div>
                             <p className="text-muted-foreground">活动时间</p>
