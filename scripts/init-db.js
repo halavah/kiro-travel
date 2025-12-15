@@ -213,6 +213,26 @@ const createTables = () => {
     )
   `);
 
+  // 酒店预订表
+  db.exec(`
+    CREATE TABLE hotel_bookings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      room_id INTEGER NOT NULL,
+      hotel_name TEXT NOT NULL,
+      room_name TEXT NOT NULL,
+      check_in DATE NOT NULL,
+      check_out DATE NOT NULL,
+      guests INTEGER NOT NULL,
+      total_price DECIMAL(10, 2) NOT NULL,
+      status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'cancelled', 'completed')),
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE,
+      FOREIGN KEY (room_id) REFERENCES hotel_rooms(id) ON DELETE CASCADE
+    )
+  `);
+
   // 新闻分类表
   db.exec(`
     CREATE TABLE news_categories (

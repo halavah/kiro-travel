@@ -1,22 +1,92 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { MapPin, Calendar, Users, Clock, ArrowLeft, ChevronLeft, ChevronRight, Share2 } from "lucide-react"
+import { MapPin, Calendar, Users, Clock, ArrowLeft, ChevronLeft, ChevronRight, Share2, Loader2 } from "lucide-react"
 import type { Activity } from "@/lib/types"
+import { toast } from "sonner"
 
 interface ActivityDetailProps {
   activity: Activity
+  isLoggedIn: boolean
+  hasJoined: boolean
 }
 
-export function ActivityDetail({ activity }: ActivityDetailProps) {
+export function ActivityDetail({ activity, isLoggedIn, hasJoined: initialHasJoined }: ActivityDetailProps) {
+  const router = useRouter()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
+  const [hasJoined, setHasJoined] = useState(initialHasJoined)
 
   const images = activity.images?.length ? activity.images : ["/travel-activity.jpg"]
+
+  const handleJoinActivity = async () => {
+    if (!isLoggedIn) {
+      router.push("/auth/sign-in")
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      const response = await fetch(`/api/activities/${activity.id}/join`, {
+        method: 'POST',
+        credentials: 'include', // 使用 cookie 认证
+      })
+
+      if (response.status === 401) {
+        router.push("/auth/sign-in")
+        return
+      }
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || '报名失败')
+      }
+
+      toast.success("报名成功！")
+      setHasJoined(true)
+      router.refresh()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "报名失败")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleCancelJoin = async () => {
+    setIsLoading(true)
+
+    try {
+      const response = await fetch(`/api/activities/${activity.id}/join`, {
+        method: 'DELETE',
+        credentials: 'include', // 使用 cookie 认证
+      })
+
+      if (response.status === 401) {
+        router.push("/auth/sign-in")
+        return
+      }
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || '取消报名失败')
+      }
+
+      toast.success("取消报名成功")
+      setHasJoined(false)
+      router.refresh()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "取消报名失败")
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -159,9 +229,40 @@ export function ActivityDetail({ activity }: ActivityDetailProps) {
                 </div>
               </div>
 
-              <Button className="w-full" size="lg">
-                立即报名
-              </Button>
+              {hasJoined ? (
+                <Button
+                  className="w-full"
+                  size="lg"
+                  variant="outline"
+                  onClick={handleCancelJoin}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      取消中...
+                    </>
+                  ) : (
+                    '取消报名'
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  className="w-full"
+                  size="lg"
+                  onClick={handleJoinActivity}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      报名中...
+                    </>
+                  ) : (
+                    '立即报名'
+                  )}
+                </Button>
+              )}
             </CardContent>
           </Card>
 
