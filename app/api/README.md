@@ -3,10 +3,13 @@
 生成日期：2025-12-15
 
 ## 目录
-1. [数据库表结构](#数据库表结构)
-2. [API 端点](#api-端点)
+1. [数据库配置](#数据库配置)
+2. [API 响应格式规范](#api-响应格式规范)
+3. [数据库表结构](#数据库表结构)
+4. [API 端点](#api-端点)
    - [认证模块](#认证模块)
    - [用户与个人资料](#用户与个人资料)
+   - [景点分类](#景点分类)
    - [景点与门票](#景点与门票)
    - [购物车与订单](#购物车与订单)
    - [酒店与预订](#酒店与预订)
@@ -14,8 +17,221 @@
    - [新闻](#新闻)
    - [收藏](#收藏)
    - [管理后台](#管理后台)
-3. [已知问题](#已知问题)
-4. [修复建议](#修复建议)
+5. [已知问题](#已知问题)
+6. [修复建议](#修复建议)
+
+---
+
+## 数据库配置
+
+### 数据库文件结构
+
+本项目使用 SQLite 作为数据库，位于 `data` 目录下：
+
+```
+data/
+├── database.sqlite      # 主数据库文件
+├── database.sqlite-shm  # SQLite 共享内存文件（WAL 模式）
+└── database.sqlite-wal  # SQLite 预写日志文件（WAL 模式）
+```
+
+**重要说明：**
+- 主数据库文件为 `database.sqlite`（不是 `database.db`）
+- 项目使用 SQLite WAL（Write-Ahead Logging）模式，提供更好的并发性能
+- `.sqlite-shm` 和 `.sqlite-wal` 文件由 SQLite 自动管理，无需手动操作
+
+### 环境变量配置
+
+在项目根目录创建 `.env.local` 文件：
+
+```env
+# 数据库配置
+DATABASE_PATH=./data/database.sqlite
+
+# JWT 密钥（用于用户认证）
+JWT_SECRET=your_jwt_secret_key_here
+
+# 服务器配置
+NODE_ENV=development
+PORT=3000
+
+# Render 部署配置（可选）
+# DATABASE_PATH=/opt/render/project/src/data/database.sqlite
+```
+
+**环境变量说明：**
+- `DATABASE_PATH`: 数据库文件路径（默认：`./data/database.sqlite`）
+- `JWT_SECRET`: JWT 令牌加密密钥（必须设置）
+- `NODE_ENV`: 运行环境（development/production）
+- `PORT`: 服务器端口（默认：3000）
+
+### 数据库初始化
+
+#### 首次初始化（创建表结构和测试数据）
+
+```bash
+# 使用 npm 脚本
+npm run init-db
+
+# 或直接运行脚本
+node scripts/init-db.js
+```
+
+初始化脚本会：
+- 创建所有数据库表（12张表）
+- 生成测试用户（admin、导游、普通用户）
+- 创建测试数据（景点、门票、酒店、活动等）
+
+**测试账户：**
+```
+管理员：
+  邮箱：admin@example.com
+  密码：admin123
+
+导游：
+  邮箱：guide1@example.com
+  密码：guide123
+
+普通用户：
+  邮箱：user1@example.com
+  密码：user123
+```
+
+#### 重置数据库（清空所有数据）
+
+```bash
+# 清空数据但保留表结构
+node scripts/reset-db.js
+```
+
+**警告：** 此操作会删除所有数据，请谨慎使用！
+
+### 数据库连接
+
+项目使用 `better-sqlite3` 库连接数据库：
+
+```typescript
+// lib/db-utils.ts
+import Database from 'better-sqlite3'
+import path from 'path'
+
+const dbPath = process.env.DATABASE_PATH ||
+  path.join(process.cwd(), 'data', 'database.sqlite')
+
+const db = new Database(dbPath)
+db.pragma('journal_mode = WAL')  // 启用 WAL 模式
+```
+
+### 数据库备份
+
+**手动备份：**
+```bash
+# 备份整个 data 目录
+cp -r data data_backup_$(date +%Y%m%d_%H%M%S)
+
+# 或只备份主数据库文件
+cp data/database.sqlite data/database_backup_$(date +%Y%m%d_%H%M%S).sqlite
+```
+
+**自动备份配置：**
+可在系统设置中配置自动备份（参见 [管理后台 - 系统设置](#get-apiadminsettings)）
+
+---
+
+## API 响应格式规范
+
+### 成功响应
+
+所有成功的 API 请求应返回以下格式：
+
+```json
+{
+  "success": true,
+  "data": { /* 响应数据 */ },
+  "message": "操作成功"  // 可选
+}
+```
+
+**示例：**
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": 1,
+      "email": "user@example.com",
+      "full_name": "张三"
+    }
+  }
+}
+```
+
+### 分页响应
+
+包含列表数据的响应应包含分页信息：
+
+```json
+{
+  "success": true,
+  "data": [ /* 数据列表 */ ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 100,
+    "pages": 10
+  }
+}
+```
+
+### 错误响应
+
+所有错误响应应返回以下格式：
+
+```json
+{
+  "success": false,
+  "error": "错误描述信息",
+  "code": "ERROR_CODE"  // 可选，用于客户端错误处理
+}
+```
+
+**HTTP 状态码规范：**
+- `200 OK`: 请求成功
+- `201 Created`: 资源创建成功
+- `400 Bad Request`: 请求参数错误
+- `401 Unauthorized`: 未认证（需要登录）
+- `403 Forbidden`: 权限不足
+- `404 Not Found`: 资源不存在
+- `409 Conflict`: 资源冲突（如重复创建）
+- `422 Unprocessable Entity`: 数据验证失败
+- `500 Internal Server Error`: 服务器内部错误
+
+**错误响应示例：**
+```json
+{
+  "success": false,
+  "error": "邮箱或密码错误",
+  "code": "INVALID_CREDENTIALS"
+}
+```
+
+### 认证
+
+大多数 API 需要用户认证。认证方式：
+
+**方式 1：Cookie（推荐）**
+```bash
+# 登录后自动设置 httpOnly cookie
+# 后续请求会自动携带
+curl -X GET https://api.example.com/api/profile \
+  --cookie "token=your_token_here"
+```
+
+**方式 2：Authorization Header**
+```bash
+curl -X GET https://api.example.com/api/profile \
+  -H "Authorization: Bearer your_token_here"
+```
 
 ---
 
@@ -302,6 +518,30 @@ UNIQUE(spot_id, user_id)
   - 400: 邮箱和密码不能为空
   - 401: 邮箱或密码错误
   - 500: 登录失败
+- **示例**：
+  ```bash
+  # 用户登录
+  curl -X POST http://localhost:3000/api/auth/login \
+    -H "Content-Type: application/json" \
+    -d '{
+      "email": "admin@example.com",
+      "password": "admin123"
+    }'
+
+  # 响应示例
+  # {
+  #   "success": true,
+  #   "data": {
+  #     "user": {
+  #       "id": 1,
+  #       "email": "admin@example.com",
+  #       "full_name": "系统管理员",
+  #       "role": "admin"
+  #     },
+  #     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  #   }
+  # }
+  ```
 
 #### POST /api/auth/register
 - **描述**：用户注册
@@ -335,6 +575,17 @@ UNIQUE(spot_id, user_id)
 - **错误代码**：
   - 400: 邮箱、密码和姓名不能为空 / 密码长度至少为6位
   - 500: 注册失败
+- **示例**：
+  ```bash
+  # 用户注册
+  curl -X POST http://localhost:3000/api/auth/register \
+    -H "Content-Type: application/json" \
+    -d '{
+      "email": "newuser@example.com",
+      "password": "password123",
+      "full_name": "张三"
+    }'
+  ```
 
 #### POST /api/auth/logout
 - **描述**：用户登出
@@ -499,6 +750,87 @@ UNIQUE(spot_id, user_id)
   }
   ```
 - **注意**：所有统计数据均从数据库实时查询
+
+---
+
+### 景点分类
+
+#### GET /api/categories
+- **描述**：获取所有景点分类列表
+- **权限**：public
+- **响应**：
+  ```json
+  {
+    "success": true,
+    "data": [
+      {
+        "id": "number",
+        "name": "string",
+        "description": "string",
+        "icon": "string",
+        "color": "string",
+        "sort_order": "number",
+        "spot_count": "number",
+        "created_at": "string"
+      }
+    ]
+  }
+  ```
+- **示例**：
+  ```bash
+  # 获取所有分类
+  curl -X GET http://localhost:3000/api/categories
+  ```
+
+#### POST /api/categories
+- **描述**：创建新分类
+- **权限**：admin（仅管理员）
+- **请求体**：
+  ```json
+  {
+    "name": "string (required)",
+    "description": "string (optional)",
+    "icon": "string (optional)",
+    "color": "string (optional, default: #3B82F6)",
+    "sort_order": "number (optional, 自动递增)"
+  }
+  ```
+- **响应**：
+  ```json
+  {
+    "success": true,
+    "data": {
+      "id": "number",
+      "name": "string",
+      "description": "string",
+      "icon": "string",
+      "color": "string",
+      "sort_order": "number"
+    },
+    "message": "分类创建成功"
+  }
+  ```
+- **错误代码**：
+  - 400: 分类名称不能为空 / 分类已存在
+  - 401: 请先登录
+  - 403: 权限不足
+- **示例**：
+  ```bash
+  # 创建新分类
+  curl -X POST http://localhost:3000/api/categories \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer YOUR_TOKEN" \
+    -d '{
+      "name": "自然风光",
+      "description": "山川湖海等自然景观",
+      "icon": "mountain",
+      "color": "#10B981"
+    }'
+  ```
+- **注意**：
+  - 分类名称必须唯一
+  - sort_order 如未指定，将自动设置为当前最大值+1
+  - 删除分类前需确保没有景点使用该分类
 
 ---
 
@@ -869,6 +1201,12 @@ UNIQUE(spot_id, user_id)
     "totalAmount": "number"
   }
   ```
+- **示例**：
+  ```bash
+  # 获取购物车
+  curl -X GET http://localhost:3000/api/cart \
+    -H "Authorization: Bearer YOUR_TOKEN"
+  ```
 
 #### POST /api/cart
 - **描述**：添加商品到购物车
@@ -891,6 +1229,17 @@ UNIQUE(spot_id, user_id)
 - **错误代码**：
   - 400: ticket_id is required / Quantity must be at least 1 / Insufficient stock
   - 404: Ticket not found
+- **示例**：
+  ```bash
+  # 添加门票到购物车
+  curl -X POST http://localhost:3000/api/cart \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer YOUR_TOKEN" \
+    -d '{
+      "ticket_id": 1,
+      "quantity": 2
+    }'
+  ```
 
 #### DELETE /api/cart
 - **描述**：清空购物车
@@ -1002,6 +1351,31 @@ UNIQUE(spot_id, user_id)
   - 扣减库存
   - 清空购物车（购物车模式）
   - 保存预订信息（直接预订模式）
+- **示例**：
+  ```bash
+  # 从购物车创建订单
+  curl -X POST http://localhost:3000/api/orders \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer YOUR_TOKEN" \
+    -d '{
+      "cart_item_ids": ["uuid-1", "uuid-2"]
+    }'
+
+  # 直接预订创建订单
+  curl -X POST http://localhost:3000/api/orders \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer YOUR_TOKEN" \
+    -d '{
+      "spot_id": 1,
+      "ticket_id": 1,
+      "visitDate": "2025-12-20",
+      "visitTime": "09:00",
+      "visitors": 2,
+      "contactName": "张三",
+      "contactPhone": "13800138000",
+      "remarks": "需要导游服务"
+    }'
+  ```
 
 #### GET /api/orders/[id]
 - **描述**：获取订单详情
@@ -1210,7 +1584,7 @@ UNIQUE(spot_id, user_id)
     "stock": "number (optional, default: 1)"
   }
   ```
-- **问题**：API 使用 room_${Date.now()} 作为ID，但数据库表使用 AUTOINCREMENT
+- **注意**：✅ 已修复（Phase 1）- 使用 AUTOINCREMENT 自动生成 ID
 
 #### GET /api/bookings
 - **描述**：获取用户的预订列表
@@ -1483,7 +1857,7 @@ UNIQUE(spot_id, user_id)
     }
   }
   ```
-- **问题**：API 使用 news_${Date.now()} 作为ID，但数据库表ID列为TEXT类型（应该使用UUID）
+- **注意**：✅ 已修复（Phase 1）- 使用 UUID 作为ID
 
 #### GET /api/news/[id]
 - **描述**：获取新闻详情
@@ -1690,9 +2064,7 @@ UNIQUE(spot_id, user_id)
     "images": ["string"] (optional)
   }
   ```
-- **问题**：
-  - 使用 UUID 作为ID，但数据库表使用 AUTOINCREMENT
-  - 插入 created_by 字段，但数据库表中没有此字段
+- **注意**：✅ 已修复（Phase 1）- 使用 AUTOINCREMENT 自动生成 ID
 
 #### PATCH /api/admin/spots/[id]
 - **描述**：更新景点
@@ -2191,17 +2563,23 @@ UNIQUE(spot_id, user_id)
 - **影响**：用户状态管理功能无法正常工作
 
 #### 景点模块
-- **问题**：`/api/admin/spots` POST 请求插�� `created_by` 字段，但数据库表中没有此字段
-- **位置**：`/app/api/admin/spots/route.ts:138`
-- **影响**：会导致数据库插入失败
+- **状态**：✅ 已修复（Phase 1）
+- **原问题**：曾计划插入 `created_by` 字段
+- **当前实现**：POST /api/admin/spots 不插入 `created_by` 字段，仅插入基本字段（name, description, location, price, category_id, is_recommended, images, status, created_at）
+- **备注**：如需记录创建者，可参考"数据库迁移建议"添加 `created_by` 字段
 
 #### 酒店管理模块
-- **问题**：
-  1. `/api/admin/hotels` POST 请求插入 `created_by`、`price_range` 字段，但数据库表中没有这些字段
-  2. 代码中引用了未定义的 `contact_email` 变量
-  3. `/api/admin/hotels/[id]` PATCH 请求更新 `facilities` 字段，但数据库表中是 `amenities`
-- **位置**：`/app/api/admin/hotels/route.ts:120-135`
-- **影响**：会导致数据库操作失败或数据不一致
+- **状态**：✅ 已修复（Phase 1）
+- **原问题**：
+  1. 曾计划插入 `created_by`、`price_range` 字段
+  2. 曾引用了未定义的 `contact_email` 变量
+  3. 曾在 PATCH 请求中使用 `facilities` 字段
+- **当前实现**：
+  1. POST /api/admin/hotels 不插入 `created_by` 和 `price_range` 字段，仅插入基本字段
+  2. 正确使用 `contact_phone` 变量（已在请求体中定义）
+  3. 正确使用 `amenities` 字段（不是 facilities）
+- **位置**：`/app/api/admin/hotels/route.ts:114-129`
+- **备注**：如需记录创建者和价格范围，可参考"数据库迁移建议"
 
 ### 2. ID 类型不匹配
 
@@ -2217,24 +2595,31 @@ UNIQUE(spot_id, user_id)
 - **影响**：正常，但需确保前端也使用字符串类型
 
 #### 新闻模块
-- **问题**：数据库��� `news.id` 是 TEXT 类型，但 API 使用 `news_${Date.now()}` 格式而非 UUID
-- **位置**：`/app/api/news/route.ts:98`
-- **影响**：ID 格式不统一，可能导致维护困难
+- **状态**：✅ 已修复（Phase 1）
+- **原问题**：曾计划使用 `news_${Date.now()}` 格式
+- **当前实现**：POST /api/news 正确使用 `randomUUID()` 生成符合标准的 UUID
+- **位置**：`/app/api/news/route.ts:99`
+- **影响**：ID ���式统一，符合最佳实践
 
 #### 酒店/活动模块
-- **问题**：
-  - 数据库表使用 AUTOINCREMENT（INTEGER），但 API 使用 UUID 或时间戳字符串
-  - `/api/hotels` POST 使用 `hotel_${Date.now()}`
-  - `/api/hotels/[id]/rooms` POST 使用 `room_${Date.now()}`
-  - `/api/activities` POST 使用 `activity_${Date.now()}`
-- **影响**：数据库插入会失败，因为 AUTOINCREMENT 字段不接受手动指定的字符串值
+- **状态**：✅ 已修复（Phase 1）
+- **原问题**：曾计划使用时间戳字符串作为 ID
+  - `/api/hotels` POST 曾使用 `hotel_${Date.now()}`
+  - `/api/hotels/[id]/rooms` POST 曾使用 `room_${Date.now()}`
+  - `/api/activities` POST 曾使用 `activity_${Date.now()}`
+- **当前实现**：所有端点均正确使用数据库 AUTOINCREMENT 自动生成 INTEGER 类型的 ID
+- **影响**：数据库操作正常，ID 类型统一
 
 ### 3. 权限检查问题
 
 #### 用户列表 API
-- **问题**：`/api/users` GET 和 POST 没有权限检查
-- **位置**：`/app/api/users/route.ts`
-- **安全风险**：任何人都可以查看用户列表和创建新用户
+- **状态**：✅ 已修复（Phase 1）
+- **原问题**：曾缺少权限检查
+- **当前实现**：
+  - GET /api/users：需要管理员权限（validateAuth + role check）
+  - POST /api/users：需要管理员权限（validateAuth + role check）
+- **位置**：`/app/api/users/route.ts:10-24, 58-72`
+- **影响**：安全问题已解决，只有管理员可以查看和创建用户
 
 ### 4. 数据验证问题
 
@@ -2396,3 +2781,37 @@ ALTER TABLE hotels ADD FOREIGN KEY (created_by) REFERENCES profiles(id);
   - Phase 3: 实现统计功能、系统设置持久化、统一API设计
   - 更新所有相关API端点的注释说明
   - 重新组织"已知问题"部分，标记已完成的修复
+- **2025-12-15**: 完善文档结构和内容（第四次更新）
+  - ✅ 添加"数据库配置"章节
+    - 说明数据库文件结构（database.sqlite, .sqlite-shm, .sqlite-wal）
+    - 详细的环境变量配置说明
+    - 数据库初始化和重置指南
+    - 提供测试账户信息
+    - 数据库连接和备份说明
+  - ✅ 添加"API 响应格式规范"章节
+    - 统一成功响应格式
+    - 分页响应标准
+    - 错误响应格式和HTTP状态码规范
+    - 认证方式说明（Cookie和Authorization Header）
+  - ✅ 添加景点分类（Categories）API文档
+    - GET /api/categories - 获取所有分类
+    - POST /api/categories - 创建新分类
+    - 包含完整的请求/响应格式和���误代码
+  - ✅ 添加实用的 curl 命令示例
+    - 认证模块：登录、注册示例
+    - 购物车模块：查看购物车、添加商品示例
+    - 订单模块：创建订单（购物车和直接预订）示例
+    - 分类模块：获取分类、创建分类示例
+- **2025-12-15**: 修正"已知问题"部分的过时描述（第五次更新）
+  - ✅ 修正 API 端点文档中的"问题"标注
+    - POST /api/admin/spots：更正为使用 AUTOINCREMENT（不是 UUID）
+    - POST /api/hotels/[id]/rooms：更正为使用 AUTOINCREMENT
+    - POST /api/news：确认正确使用 UUID
+  - ✅ 更新"已知问题"部分，反映 Phase 1 修复成果
+    - 景点模块：明确未插入 created_by 字段（与文档一致）
+    - 酒店管理模块：确认已修复 created_by、price_range、contact_phone 问题
+    - 新闻模块：确认使用 randomUUID() 而非时间戳
+    - 酒店/活动模块：确认所有端点使用 AUTOINCREMENT
+    - 用户列表 API：确认已添加管理员权限检查
+  - ✅ 验证所有修复描述与实际代码实现一致
+
