@@ -101,20 +101,28 @@ export function initDatabase() {
 
 // 自动初始化数据库（如果表不存在）
 // 使用环境变量防止在 init-db.js 执行时重复初始化
-// 在构建阶段跳过数据库初始化（避免并发冲突）
+// 在构建阶段和生产环境跳过自动初始化
 const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build'
+const isProduction = process.env.NODE_ENV === 'production'
 
 if (!isDatabaseInitialized() && !process.env.DB_INITIALIZING && !isBuildTime) {
-  console.log('🔧 数据库未初始化，开始自动初始化...')
-  try {
-    // 设置标志防止递归初始化
-    process.env.DB_INITIALIZING = 'true'
-    initDatabase()
-    delete process.env.DB_INITIALIZING
-  } catch (error) {
-    console.error('❌ 自动初始化数据库失败:', error)
-    delete process.env.DB_INITIALIZING
-    // 不抛出错误，允许构建继续（运行时会由 dynamic 路由处理）
+  if (isProduction) {
+    // 生产环境：只记录警告，不自动初始化
+    console.warn('⚠️  生产环境数据库未初始化，请手动运行: npm run db:init')
+    console.warn('⚠️  或访问 /api/init-db 端点进行初始化')
+  } else {
+    // 开发环境：自动初始化
+    console.log('🔧 数据库未初始化，开始自动初始化...')
+    try {
+      // 设置标志防止递归初始化
+      process.env.DB_INITIALIZING = 'true'
+      initDatabase()
+      delete process.env.DB_INITIALIZING
+    } catch (error) {
+      console.error('❌ 自动初始化数据库失败:', error)
+      delete process.env.DB_INITIALIZING
+      // 不抛出错误，允许构建继续
+    }
   }
 } else if (isBuildTime) {
   console.log('⏭️  构建阶段，跳过数据库初始化')

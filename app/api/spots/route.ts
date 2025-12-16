@@ -62,8 +62,14 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error fetching spots:', error)
+    // 返回更详细的错误信息（仅在开发环境）
+    const isDev = process.env.NODE_ENV !== 'production'
     return NextResponse.json(
-      { success: false, error: '获取景点列表失败' },
+      {
+        success: false,
+        error: '获取景点列表失败',
+        ...(isDev && { details: error instanceof Error ? error.message : String(error) })
+      },
       { status: 500 }
     )
   }

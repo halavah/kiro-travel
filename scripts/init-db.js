@@ -8,10 +8,20 @@ const fs = require('fs');
 const dbPath = process.env.DATABASE_PATH || path.join(__dirname, '..', 'data', 'database.sqlite');
 console.log('📁 数据库路径:', dbPath);
 
-// 删除旧数据库文件
+// 安全检查：生产环境不自动删除数据库
+const isProduction = process.env.NODE_ENV === 'production';
+const forceReset = process.env.FORCE_DB_RESET === 'true';
+
+// 删除旧数据库文件（仅在开发环境或明确要求时）
 if (fs.existsSync(dbPath)) {
-  fs.unlinkSync(dbPath);
-  console.log('✓ 删除旧数据库文件');
+  if (isProduction && !forceReset) {
+    console.log('⚠️  生产环境已存在数据库，跳过删除（如需重置请设置 FORCE_DB_RESET=true）');
+    console.log('⚠️  数据库初始化中止，请确认是否需要重置数据库');
+    process.exit(0);
+  } else {
+    fs.unlinkSync(dbPath);
+    console.log('✓ 删除旧数据库文件');
+  }
 }
 
 // 确保数据目录存在
