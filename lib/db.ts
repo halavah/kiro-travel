@@ -51,7 +51,7 @@ function isDatabaseInitialized(): boolean {
   try {
     // 检查所有关键表是否存在
     const requiredTables = [
-      'profiles', 'categories', 'spots', 'tickets', 'activities',
+      'profiles', 'spot_categories', 'spots', 'tickets', 'activities',
       'hotels', 'hotel_rooms', 'orders', 'news', 'news_categories'
     ]
 
