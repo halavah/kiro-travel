@@ -9,12 +9,13 @@
   "scripts": {
     "build": "next build",
     "dev": "node scripts/init-db.js && next dev",
-    "start": "next start",
+    "start": "node scripts/check-db.js && next start",
     "lint": "eslint .",
     "setup": "node scripts/setup.mjs",
     "db:init": "node scripts/init-db.js",
     "db:reset": "rm -f data/database.sqlite && npm run db:init",
-    "db:fts": "node scripts/setup-fts.mjs"
+    "db:fts": "node scripts/setup-fts.mjs",
+    "db:diagnose": "node scripts/diagnose.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
