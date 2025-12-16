@@ -43,7 +43,6 @@ export async function GET(request: NextRequest) {
       FROM spots s
       LEFT JOIN spot_categories sc ON s.category_id = sc.id
       ${whereClause}
-      GROUP BY s.id
       ORDER BY s.created_at DESC
     `
 

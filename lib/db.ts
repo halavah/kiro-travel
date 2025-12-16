@@ -101,7 +101,10 @@ export function initDatabase() {
 
 // 自动初始化数据库（如果表不存在）
 // 使用环境变量防止在 init-db.js 执行时重复初始化
-if (!isDatabaseInitialized() && !process.env.DB_INITIALIZING) {
+// 在构建阶段跳过数据库初始化（避免并发冲突）
+const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build'
+
+if (!isDatabaseInitialized() && !process.env.DB_INITIALIZING && !isBuildTime) {
   console.log('🔧 数据库未初始化，开始自动初始化...')
   try {
     // 设置标志防止递归初始化
@@ -113,6 +116,8 @@ if (!isDatabaseInitialized() && !process.env.DB_INITIALIZING) {
     delete process.env.DB_INITIALIZING
     // 不抛出错误，允许构建继续（运行时会由 dynamic 路由处理）
   }
+} else if (isBuildTime) {
+  console.log('⏭️  构建阶段，跳过数据库初始化')
 }
 
 // 关闭数据库连接

@@ -52,8 +52,9 @@ export function paginate<T = any>(
     pages: number
   }
 } {
-  // 获取总数
-  const countSql = `SELECT COUNT(*) as total FROM (${sql})`
+  // 获取总数 - 移除 ORDER BY 和 LIMIT 子句以提高性能
+  const sqlWithoutOrder = sql.replace(/ORDER BY[^)]*$/i, '').trim()
+  const countSql = `SELECT COUNT(*) as total FROM (${sqlWithoutOrder})`
   const { total } = dbGet<{ total: number }>(countSql, params) || { total: 0 }
 
   // 获取分页数据

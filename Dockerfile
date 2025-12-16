@@ -1,4 +1,6 @@
 # 使用 Node.js 20 Debian Slim 镜像（better-sqlite3 和 lightningcss 需要更好的原生模块支持）
+# 注意：使用 linux/amd64 平台以确保 lightningcss 原生模块正确安装
+# 参考：https://github.com/tailwindlabs/tailwindcss/issues/17728
 FROM node:20-slim AS base
 
 # 构建阶段（合并依赖安装和构建，确保原生模块在正确环境中编译）
@@ -6,7 +8,7 @@ FROM base AS builder
 WORKDIR /app
 
 # 安装编译工具（better-sqlite3 和 lightningcss 需要）
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     make \
     g++ \
@@ -16,6 +18,14 @@ RUN apt-get update && apt-get install -y \
 # 这确保 lightningcss 安装 linux-x64-gnu 版本而不是 darwin-arm64
 COPY package.json package-lock.json* ./
 RUN npm ci
+
+# 显式安装 Tailwind CSS v4 所需的原生模块（修复 optional dependency 被跳过的问题）
+# 参考：https://github.com/tailwindlabs/tailwindcss/issues/17728
+# 参考：https://github.com/npm/cli/issues/4828
+RUN npm install --no-save \
+    lightningcss-linux-x64-gnu \
+    @tailwindcss/oxide-linux-x64-gnu \
+    || true
 
 # 复制源代码
 COPY . .
@@ -32,7 +42,7 @@ FROM base AS runner
 WORKDIR /app
 
 # 安装运行时需要的工具（wget 用于健康检查）
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
@@ -47,8 +57,8 @@ RUN groupadd -r -g 1001 nodejs && \
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=builder /app/scripts ./scripts
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 
 # 创建数据目录
