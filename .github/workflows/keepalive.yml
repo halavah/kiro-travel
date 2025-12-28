@@ -1,0 +1,34 @@
+name: Keep Render Service Alive
+
+on:
+  schedule:
+    # 每 10 分钟运行一次（GitHub Actions 最短间隔是 5 分钟）
+    - cron: '*/10 * * * *'
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render Service
+        run: |
+          echo "🔄 Pinging Render service at $(date)"
+
+          # Ping 健康检查端点
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://kiro-travel.onrender.com/api/health || echo "000")
+
+          if [ "$response" = "200" ]; then
+            echo "✅ Service is alive! HTTP Status: $response"
+          elif [ "$response" = "000" ]; then
+            echo "⚠️ Service might be sleeping or starting up, this is normal for first ping"
+          else
+            echo "⚠️ Unexpected response: HTTP Status: $response"
+          fi
+
+          echo "⏰ Next ping in 10 minutes"
+
+      - name: Log Ping Result
+        if: always()
+        run: |
+          echo "📊 Ping completed at $(date)"
+          echo "🌐 Target: https://kiro-travel.onrender.com/api/health"
