@@ -68,14 +68,14 @@ RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
 USER nextjs
 
 # 暴露端口
-EXPOSE 3000
+EXPOSE 22310
 
-ENV PORT=3000
+ENV PORT=22310
 ENV HOSTNAME="0.0.0.0"
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:22310/api/health || exit 1
 
 # 启动应用
 CMD ["node", "server.js"]

@@ -8,8 +8,12 @@
   },
   "scripts": {
     "build": "next build",
+    "build:render": "next build",
+    "build:prod": "next build",
     "dev": "node scripts/init-db.js && next dev",
     "start": "node scripts/check-db.js && next start",
+    "start:render": "next start",
+    "start:prod": "next start",
     "lint": "eslint .",
     "setup": "node scripts/setup.mjs",
     "db:init": "node scripts/init-db.js",
