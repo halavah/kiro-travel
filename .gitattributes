@@ -33,6 +33,7 @@
 # 编程语言文件
 *.py text eol=lf
 *.js text eol=lf
+*.j2 text eol=lf
 *.ts text eol=lf
 *.html text eol=lf
 *.css text eol=lf
